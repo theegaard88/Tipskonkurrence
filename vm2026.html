@@ -7,6 +7,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,-apple-system,sans-serif;background:#0a0f1e;color:#e8eaf0;min-height:100vh}
+.page-wrapper{max-width:1100px;margin:0 auto}
 .header{background:linear-gradient(135deg,#0d1b3e,#1a2d5a);padding:1.5rem 2rem;border-bottom:1px solid #1e3a6e;display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
 .header h1{font-size:1.4rem;font-weight:700;color:#fff;letter-spacing:-0.3px}
 .header .sub{font-size:0.85rem;color:#7a9cc4;margin-top:2px}
@@ -15,7 +16,7 @@ nav{display:flex;gap:0.5rem;padding:1rem 2rem;background:#0d1525;border-bottom:1
 .tab{padding:0.5rem 1.1rem;border-radius:6px;border:1px solid #1e3a6e;background:transparent;color:#7a9cc4;cursor:pointer;font-size:0.85rem;font-weight:500;transition:all 0.15s}
 .tab.active{background:#1a3a6e;color:#fff;border-color:#2a5aaa}
 .tab:hover:not(.active){background:#111e38;color:#b0c8e8}
-.content{padding:1.5rem 2rem;max-width:1100px}
+.content{padding:1.5rem 2rem}
 .section{display:none}
 .section.active{display:block}
 
@@ -128,6 +129,7 @@ select{width:100%;text-align:center}
 </head>
 <body>
 
+<div class="page-wrapper">
 <div class="header">
   <div class="trophy">⚽</div>
   <div>
@@ -804,5 +806,6 @@ function renderPraemier() {
 // Init - load from Supabase then render
 loadFromDB().then(() => renderRangliste());
 </script>
+</div><!-- end page-wrapper -->
 </body>
 </html>
