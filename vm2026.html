@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VM 2026 Tipskonkurrence</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0a0f1e;color:#e8eaf0;min-height:100vh}
+.header{background:linear-gradient(135deg,#0d1b3e,#1a2d5a);padding:1.5rem 2rem;border-bottom:1px solid #1e3a6e;display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+.header h1{font-size:1.4rem;font-weight:700;color:#fff;letter-spacing:-0.3px}
+.header .sub{font-size:0.85rem;color:#7a9cc4;margin-top:2px}
+.trophy{font-size:2rem}
+nav{display:flex;gap:0.5rem;padding:1rem 2rem;background:#0d1525;border-bottom:1px solid #1a2d50;flex-wrap:wrap}
+.tab{padding:0.5rem 1.1rem;border-radius:6px;border:1px solid #1e3a6e;background:transparent;color:#7a9cc4;cursor:pointer;font-size:0.85rem;font-weight:500;transition:all 0.15s}
+.tab.active{background:#1a3a6e;color:#fff;border-color:#2a5aaa}
+.tab:hover:not(.active){background:#111e38;color:#b0c8e8}
+.content{padding:1.5rem 2rem;max-width:1100px}
+.section{display:none}
+.section.active{display:block}
+
+/* Rangliste */
+.podium{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:2rem}
+.podium-card{background:#0d1b3e;border:1px solid #1e3a6e;border-radius:10px;padding:1.2rem;text-align:center}
+.podium-card.p1{border-color:#f5c842;background:linear-gradient(180deg,#1a1400,#0d1b3e)}
+.podium-card.p2{border-color:#b0b8c8;background:linear-gradient(180deg,#0f1520,#0d1b3e)}
+.podium-card.p3{border-color:#b07a40;background:linear-gradient(180deg,#130e05,#0d1b3e)}
+.podium-rank{font-size:1.8rem;margin-bottom:0.3rem}
+.podium-name{font-weight:600;font-size:1rem;color:#e8eaf0}
+.podium-pts{font-size:1.8rem;font-weight:700;color:#4a9eff;margin:0.3rem 0}
+.podium-prize{font-size:0.8rem;color:#7a9cc4}
+
+.leaderboard{display:grid;gap:0.5rem}
+.lb-row{display:grid;grid-template-columns:40px 1fr 80px 90px;align-items:center;padding:0.75rem 1.2rem;border-radius:8px;background:#0d1b3e;border:1px solid #1e3a6e;transition:background 0.1s}
+.lb-row:hover{background:#111e38}
+.lb-rank{font-size:0.85rem;color:#7a9cc4;font-weight:600}
+.lb-name{font-size:0.95rem;font-weight:500}
+.lb-pts{font-size:1rem;font-weight:700;color:#4a9eff;text-align:right}
+.lb-move{font-size:0.82rem;font-weight:600;text-align:right;white-space:nowrap}
+.lb-move.up{color:#22c55e}.lb-move.down{color:#ef4444}.lb-move.same{color:#5a7aa4}
+.lb-header{background:#091428;border:1px solid #111e38;font-size:0.75rem;color:#5a7aa4;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+
+/* Mine resultater */
+.select-player{display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.select-player label{font-size:0.9rem;color:#7a9cc4;font-weight:500}
+select{background:#0d1b3e;border:1px solid #1e3a6e;color:#e8eaf0;padding:0.5rem 1rem;border-radius:6px;font-size:0.9rem;cursor:pointer}
+.player-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1rem;margin-bottom:1.5rem}
+.stat-card{background:#0d1b3e;border:1px solid #1e3a6e;border-radius:8px;padding:1rem;text-align:center}
+.stat-val{font-size:1.6rem;font-weight:700;color:#4a9eff}
+.stat-lbl{font-size:0.75rem;color:#7a9cc4;margin-top:4px;text-transform:uppercase;letter-spacing:0.3px}
+
+.matches-grid{display:grid;gap:0.6rem}
+.match-card{background:#0d1b3e;border:1px solid #1e3a6e;border-radius:8px;padding:0.9rem 1.1rem;display:grid;grid-template-columns:70px 80px 1fr 80px 80px 90px 50px;align-items:center;gap:0.7rem;font-size:0.85rem}
+.match-round{color:#5a7aa4;font-size:0.75rem;font-weight:600;text-transform:uppercase;white-space:nowrap}
+.match-teams{font-weight:400;color:#e8eaf0}
+.match-away{color:#e8eaf0;font-size:0.8rem}
+.match-result{text-align:center;font-weight:700;color:#fff}
+.match-pred{text-align:center;color:#9ab0cc}
+.match-pred-first{text-align:center;color:#9ab0cc;border-left:1px solid #1e3a6e;padding-left:0.6rem}
+.match-pred-last{text-align:center;color:#9ab0cc;border-right:1px solid #1e3a6e;padding-right:0.6rem}
+.match-result-sep{text-align:center;font-weight:700;color:#fff;padding-left:0.8rem}
+.match-pts{text-align:center;font-weight:700}
+.pts-4{color:#22c55e}.pts-3{color:#86efac}.pts-1{color:#fbbf24}.pts-0{color:#ef4444}.pts-pending{color:#5a7aa4}
+.match-header{background:#091428;color:#5a7aa4;font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap}
+
+/* Kampe */
+.round-section{margin-bottom:1.5rem}
+.round-title{font-size:0.8rem;color:#5a7aa4;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:0.6rem;padding-bottom:0.4rem;border-bottom:1px solid #111e38}
+.match-all{background:#0d1b3e;border:1px solid #1e3a6e;border-radius:8px;padding:0.85rem 1.1rem;margin-bottom:0.5rem}
+.team-home{text-align:right;font-size:0.9rem}
+.team-away{text-align:left;font-size:0.9rem}
+.score-box{text-align:center;min-width:80px}
+.score-num{font-size:1.1rem;font-weight:700;color:#4a9eff}
+.score-pending{font-size:0.8rem;color:#5a7aa4;padding:2px 8px;background:#091428;border-radius:4px}
+.group-badge{font-size:0.7rem;color:#5a7aa4;margin-top:2px}
+
+/* Præmier */
+.prizes{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:2rem}
+.prize-card{background:#0d1b3e;border-radius:10px;padding:1.5rem;text-align:center}
+.prize-card.g{border:1px solid #f5c842}.prize-card.s{border:1px solid #b0b8c8}.prize-card.b{border:1px solid #b07a40}
+.prize-icon{font-size:2.2rem;margin-bottom:0.5rem}
+.prize-place{font-size:0.85rem;color:#7a9cc4;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+.prize-amount{font-size:2rem;font-weight:700;color:#4a9eff;margin:0.3rem 0}
+.prize-pct{font-size:0.8rem;color:#5a7aa4}
+
+/* Admin */
+.admin-section{background:#0d1b3e;border:1px solid #1e3a6e;border-radius:10px;padding:1.5rem;margin-bottom:1.5rem}
+.admin-section h3{font-size:1rem;font-weight:600;margin-bottom:1rem;color:#b0c8e8}
+.admin-grid{display:grid;gap:0.6rem}
+.admin-row{display:grid;grid-template-columns:1fr 80px 80px;gap:0.6rem;align-items:center;padding:0.6rem 0.8rem;background:#091428;border-radius:6px;font-size:0.85rem}
+.admin-teams{font-weight:500}
+.admin-inp{background:#0a1628;border:1px solid #1e3a6e;color:#e8eaf0;padding:0.35rem 0.6rem;border-radius:5px;font-size:0.85rem;width:100%;text-align:center}
+.btn-save{background:#1a3a8e;color:#fff;border:none;padding:0.6rem 1.5rem;border-radius:6px;font-size:0.9rem;font-weight:600;cursor:pointer;margin-top:1rem;transition:background 0.15s}
+.btn-save:hover{background:#2a5ab8}
+.admin-hint{font-size:0.8rem;color:#5a7aa4;margin-bottom:0.5rem}
+.admin-spec-row{display:grid;grid-template-columns:120px 1fr;gap:0.6rem;align-items:center;padding:0.5rem 0.8rem;background:#091428;border-radius:6px;font-size:0.85rem;margin-bottom:0.4rem}
+.admin-spec-lbl{color:#7a9cc4;font-size:0.8rem}
+
+/* Tipssektion */
+.tips-grid{display:grid;gap:0.6rem}
+.tips-row{display:grid;grid-template-columns:1fr 60px 60px 60px;gap:0.5rem;align-items:center;padding:0.7rem 1rem;background:#091428;border-radius:6px;font-size:0.85rem}
+.tips-teams{font-weight:500}
+.tips-inp{background:#0d1b3e;border:1px solid #1e3a6e;color:#e8eaf0;padding:0.35rem 0;border-radius:5px;font-size:0.85rem;text-align:center;width:100%}
+.tips-hdr{color:#5a7aa4;font-size:0.75rem;font-weight:600;text-transform:uppercase;text-align:center}
+
+/* Responsive */
+@media(max-width:600px){
+.podium{grid-template-columns:1fr}
+.content{padding:1rem}
+nav{padding:0.75rem 1rem;justify-content:center}
+.guess-box-desktop{display:none !important}
+.guess-boxes-mobile{display:flex !important}
+.select-player{align-items:center !important;text-align:center;width:100%}
+.select-player label{text-align:center;width:100%}
+select{width:100%;text-align:center}
+.header{justify-content:center;text-align:center}
+.match-card-desktop{display:none !important}
+.match-card-mobile{display:block !important}
+.match-header{display:none}
+.kampe-desktop{display:grid !important}
+.kampe-mobile{display:none !important}
+}
+@media(max-width:600px){
+.kampe-desktop{display:none !important}
+.kampe-mobile{display:block !important}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="trophy">⚽</div>
+  <div>
+    <h1>VM 2026 Tipskonkurrence</h1>
+    <div class="sub">19 deltagere · 1.900 kr i præmiepulje · Gruppespil</div>
+  </div>
+</div>
+
+<nav>
+  <button class="tab active" onclick="showTab('rangliste', this)">🏆 Rangliste</button>
+  <button class="tab" onclick="showTab('mine', this)">👤 Mine resultater</button>
+  <button class="tab" onclick="showTab('kampe', this)">⚽ Kampe</button>
+  <button class="tab" onclick="showTab('praemier', this)">💰 Præmier</button>
+  <button class="tab" onclick="showTab('admin', this)">🔧 Admin</button>
+</nav>
+
+<div class="content">
+
+<!-- RANGLISTE -->
+<div id="tab-rangliste" class="section active">
+  <div class="podium" id="podium"></div>
+  <div class="leaderboard">
+    <div class="lb-row lb-header"><span>#</span><span>Spiller</span><span style="text-align:right">Point</span><span style="text-align:right">Sidste 5</span></div>
+    <div id="lb-rows" style="display:grid;gap:0.5rem;margin-top:0.5rem"></div>
+  </div>
+</div>
+
+<!-- MINE RESULTATER -->
+<div id="tab-mine" class="section">
+  <div style="display:flex;gap:1rem;align-items:flex-start;margin-bottom:1rem;flex-wrap:wrap">
+    <div class="select-player" style="margin-bottom:0;flex-direction:column;align-items:flex-start">
+      <label>Vælg spiller:</label>
+      <select id="player-select" onchange="renderMine()"></select>
+    </div>
+    <div id="player-guesses-placement" class="guess-box-desktop" style="background:#0d1b3e;border:1px solid #1e3a6e;border-radius:8px;padding:0.6rem 0.8rem;width:fit-content"></div>
+    <div id="player-guesses-topscorer" class="guess-box-desktop" style="background:#0d1b3e;border:1px solid #1e3a6e;border-radius:8px;padding:0.6rem 0.8rem;width:fit-content"></div>
+  </div>
+  <div class="guess-boxes-mobile" style="display:none;gap:1rem;margin-bottom:1rem">
+    <div id="player-guesses-placement-mobile" style="background:#0d1b3e;border:1px solid #1e3a6e;border-radius:8px;padding:0.6rem 0.8rem;flex:1"></div>
+    <div id="player-guesses-topscorer-mobile" style="background:#0d1b3e;border:1px solid #1e3a6e;border-radius:8px;padding:0.6rem 0.8rem;flex:1"></div>
+  </div>
+  <div class="player-stats" id="player-stats"></div>
+  <div class="match-card match-header">
+    <span>Runde</span><span>Gruppe</span><span>Kamp</span><span style="text-align:center">Gæt score</span><span style="text-align:center">Gæt Tegn</span><span style="text-align:center">Resultat</span><span style="text-align:center">Point</span>
+  </div>
+  <div class="matches-grid" id="mine-matches"></div>
+</div>
+
+<!-- KAMPE -->
+<div id="tab-kampe" class="section">
+  <div id="kampe-list"></div>
+</div>
+
+<!-- PRÆMIER -->
+<div id="tab-praemier" class="section">
+  <div class="prizes">
+    <div class="prize-card g">
+      <div class="prize-icon">🥇</div>
+      <div class="prize-place">1. præmie</div>
+      <div class="prize-amount">1.140 kr</div>
+      <div class="prize-pct">60% af puljen</div>
+    </div>
+    <div class="prize-card s">
+      <div class="prize-icon">🥈</div>
+      <div class="prize-place">2. præmie</div>
+      <div class="prize-amount">570 kr</div>
+      <div class="prize-pct">30% af puljen</div>
+    </div>
+    <div class="prize-card b">
+      <div class="prize-icon">🥉</div>
+      <div class="prize-place">3. præmie</div>
+      <div class="prize-amount">190 kr</div>
+      <div class="prize-pct">10% af puljen</div>
+    </div>
+  </div>
+  <div style="background:#0d1b3e;border:1px solid #1e3a6e;border-radius:10px;padding:1.5rem">
+    <h3 style="font-size:1rem;font-weight:600;color:#b0c8e8;margin-bottom:1rem">Pointsystem</h3>
+    <div style="display:grid;gap:0.6rem;font-size:0.9rem">
+      <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid #111e38"><span>Korrekt resultat (score)</span><span style="font-weight:700;color:#22c55e">3 point</span></div>
+      <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid #111e38"><span>Korrekt tipstegn (1/X/2)</span><span style="font-weight:700;color:#86efac">1 point</span></div>
+      <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid #111e38"><span>Korrekt placering (guld/sølv/bronze)</span><span style="font-weight:700;color:#fbbf24">10 point pr. styk (maks 30)</span></div>
+      <div style="display:flex;justify-content:space-between;padding:0.5rem 0"><span>Korrekt topscorer placering (1/2/3)</span><span style="font-weight:700;color:#fbbf24">10 point pr. styk (maks 30)</span></div>
+    </div>
+    <div style="margin-top:1rem;padding:0.75rem;background:#091428;border-radius:6px;font-size:0.8rem;color:#7a9cc4">
+      <strong style="color:#9ab0cc">OBS:</strong> Korrekt resultat giver 3+1=4 point (score + tegn). Korrekt tegn uden korrekt score giver kun 1 point.
+    </div>
+  </div>
+  <div style="background:#0d1b3e;border:1px solid #1e3a6e;border-radius:10px;padding:1.5rem;margin-top:1rem">
+    <h3 style="font-size:1rem;font-weight:600;color:#b0c8e8;margin-bottom:1rem">Placerings- og topscorersgæt</h3>
+    <div id="placements-table"></div>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div id="tab-admin" class="section">
+  <div id="admin-lock" style="text-align:center;padding:3rem 1rem">
+    <div style="font-size:2rem;margin-bottom:1rem">🔐</div>
+    <div style="font-size:1rem;color:#7a9cc4;margin-bottom:1.2rem">Indtast adgangskode for at åbne Admin</div>
+    <input id="admin-pw" type="password" placeholder="Adgangskode" style="background:#0d1b3e;border:1px solid #1e3a6e;color:#e8eaf0;padding:0.6rem 1rem;border-radius:6px;font-size:1rem;width:220px;text-align:center" onkeydown="if(event.key==='Enter')checkAdminPw()">
+    <br><br>
+    <button onclick="checkAdminPw()" style="background:#1a3a8e;color:#fff;border:none;padding:0.6rem 1.5rem;border-radius:6px;font-size:0.95rem;font-weight:600;cursor:pointer">Log ind</button>
+    <div id="admin-pw-error" style="color:#ef4444;margin-top:0.8rem;font-size:0.85rem;display:none">Forkert adgangskode ❌</div>
+  </div>
+  <div id="admin-content" style="display:none">
+  <div class="admin-section">
+    <h3>Indtast kampresultater</h3>
+    <p class="admin-hint">Kun afsluttede kampe vises. Tast resultat (fx 2-1) og klik gem.</p>
+    <div class="admin-grid" id="admin-matches"></div>
+    <button class="btn-save" onclick="saveResults()">Gem resultater og beregn point</button>
+  </div>
+  <div class="admin-section">
+    <h3>Placering &amp; topscorer (afgøres ved slutning)</h3>
+    <p class="admin-hint">Udfyld når turneringen er slut.</p>
+    <div id="admin-special"></div>
+    <button class="btn-save" onclick="saveSpecial()">Gem slutresultater</button>
+  </div>
+  </div><!-- end admin-content -->
+</div>
+
+</div>
+
+<script>
+const DATA = {"participants":["Thomas Heegaard","Frederik Franck","Martin Thomsen","Sigrid Pepke","Felix Suneson","Martin Haupt Højer","Sarah Ferguen","Nicolai Trier","Jakob Skov","Jonas Andersen","Nadia Laas","Lasse Kjellerup","Simon Baudtler","Patrick Klarlund","Esben Dickenson","Rasmus Aabenhuus","Michael Weirsøe","Morten Jespersen","Lars Navntoft"],"matches":[{"round":"Round 1","group":"A","home":"Mexico","away":"Sydafrika","result_home":2,"result_away":0,"sign":1,"predictions":{"Thomas Heegaard":{"home":2,"away":0,"sign":1,"points":4},"Frederik Franck":{"home":4,"away":1,"sign":1,"points":1},"Martin Thomsen":{"home":3,"away":1,"sign":1,"points":1},"Sigrid Pepke":{"home":1,"away":0,"sign":1,"points":1},"Felix Suneson":{"home":2,"away":0,"sign":1,"points":4},"Martin Haupt Højer":{"home":2,"away":1,"sign":1,"points":1},"Sarah Ferguen":{"home":2,"away":0,"sign":1,"points":4},"Nicolai Trier":{"home":2,"away":1,"sign":1,"points":1},"Jakob Skov":{"home":2,"away":0,"sign":1,"points":4},"Jonas Andersen":{"home":2,"away":0,"sign":"X","points":3},"Nadia Laas":{"home":1,"away":0,"sign":1,"points":1},"Lasse Kjellerup":{"home":2,"away":0,"sign":1,"points":4},"Simon Baudtler":{"home":1,"away":0,"sign":"x","points":0},"Patrick Klarlund":{"home":3,"away":1,"sign":1,"points":1},"Esben Dickenson":{"home":2,"away":1,"sign":1,"points":1},"Rasmus Aabenhuus":{"home":2,"away":0,"sign":1,"points":4},"Michael Weirsøe":{"home":1,"away":0,"sign":1,"points":1},"Morten Jespersen":{"home":2,"away":0,"sign":1,"points":4},"Lars Navntoft":{"home":2,"away":0,"sign":1,"points":4}}},{"round":"Round 1","group":"A","home":"Sydkorea","away":"Tjekkiet","result_home":2,"result_away":1,"sign":1,"predictions":{"Thomas Heegaard":{"home":1,"away":1,"sign":"X","points":0},"Frederik Franck":{"home":1,"away":1,"sign":"X","points":0},"Martin Thomsen":{"home":2,"away":2,"sign":2,"points":0},"Sigrid Pepke":{"home":1,"away":1,"sign":"X","points":0},"Felix Suneson":{"home":1,"away":0,"sign":1,"points":1},"Martin Haupt Højer":{"home":1,"away":1,"sign":"x","points":0},"Sarah Ferguen":{"home":3,"away":1,"sign":1,"points":1},"Nicolai Trier":{"home":1,"away":1,"sign":"x","points":0},"Jakob Skov":{"home":1,"away":1,"sign":"x","points":0},"Jonas Andersen":{"home":1,"away":1,"sign":1,"points":1},"Nadia Laas":{"home":0,"away":0,"sign":"X","points":0},"Lasse Kjellerup":{"home":1,"away":1,"sign":"X","points":0},"Simon Baudtler":{"home":1,"away":1,"sign":1,"points":1},"Patrick Klarlund":{"home":2,"away":1,"sign":1,"points":4},"Esben Dickenson":{"home":1,"away":1,"sign":"x","points":0},"Rasmus Aabenhuus":{"home":1,"away":1,"sign":"x","points":0},"Michael Weirsøe":{"home":2,"away":1,"sign":"x","points":3},"Morten Jespersen":{"home":1,"away":1,"sign":"x","points":0},"Lars Navntoft":{"home":0,"away":0,"sign":"x","points":0}}},{"round":"Round 1","group":"B","home":"Canada","away":"Bosnien-Hercegovina","result_home":1,"result_away":1,"sign":"x","predictions":{"Thomas Heegaard":{"home":2,"away":1,"sign":1,"points":0},"Frederik Franck":{"home":1,"away":2,"sign":2,"points":0},"Martin Thomsen":{"home":1,"away":1,"sign":1,"points":3},"Sigrid Pepke":{"home":1,"away":1,"sign":"x","points":4},"Felix Suneson":{"home":1,"away":1,"sign":"x","points":4},"Martin Haupt Højer":{"home":1,"away":1,"sign":"x","points":4},"Sarah Ferguen":{"home":0,"away":0,"sign":"x","points":1},"Nicolai Trier":{"home":1,"away":1,"sign":"x","points":4},"Jakob Skov":{"home":1,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":1,"away":0,"sign":1,"points":0},"Nadia Laas":{"home":2,"away":0,"sign":1,"points":0},"Lasse Kjellerup":{"home":2,"away":1,"sign":1,"points":0},"Simon Baudtler":{"home":1,"away":2,"sign":"x","points":1},"Patrick Klarlund":{"home":1,"away":1,"sign":"x","points":4},"Esben Dickenson":{"home":2,"away":1,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":0,"away":0,"sign":"x","points":1},"Michael Weirsøe":{"home":1,"away":1,"sign":"x","points":4},"Morten Jespersen":{"home":2,"away":1,"sign":1,"points":0},"Lars Navntoft":{"home":1,"away":1,"sign":"x","points":4}}},{"round":"Round 1","group":"D","home":"USA","away":"Paraguay","result_home":4,"result_away":1,"sign":1,"predictions":{"Thomas Heegaard":{"home":2,"away":1,"sign":1,"points":1},"Frederik Franck":{"home":2,"away":1,"sign":1,"points":1},"Martin Thomsen":{"home":2,"away":0,"sign":1,"points":1},"Sigrid Pepke":{"home":2,"away":1,"sign":1,"points":1},"Felix Suneson":{"home":3,"away":0,"sign":1,"points":1},"Martin Haupt Højer":{"home":0,"away":1,"sign":2,"points":0},"Sarah Ferguen":{"home":1,"away":1,"sign":"x","points":0},"Nicolai Trier":{"home":1,"away":1,"sign":"x","points":0},"Jakob Skov":{"home":2,"away":0,"sign":1,"points":1},"Jonas Andersen":{"home":2,"away":2,"sign":"X","points":0},"Nadia Laas":{"home":1,"away":1,"sign":"x","points":0},"Lasse Kjellerup":{"home":2,"away":1,"sign":1,"points":1},"Simon Baudtler":{"home":2,"away":2,"sign":1,"points":1},"Patrick Klarlund":{"home":2,"away":1,"sign":1,"points":1},"Esben Dickenson":{"home":2,"away":0,"sign":1,"points":1},"Rasmus Aabenhuus":{"home":2,"away":1,"sign":1,"points":1},"Michael Weirsøe":{"home":2,"away":0,"sign":1,"points":1},"Morten Jespersen":{"home":2,"away":1,"sign":1,"points":1},"Lars Navntoft":{"home":2,"away":1,"sign":1,"points":1}}},{"round":"Round 1","group":"B","home":"Qatar","away":"Schweiz","result_home":1,"result_away":1,"sign":"x","predictions":{"Thomas Heegaard":{"home":0,"away":3,"sign":2,"points":0},"Frederik Franck":{"home":0,"away":3,"sign":2,"points":0},"Martin Thomsen":{"home":1,"away":1,"sign":2,"points":3},"Sigrid Pepke":{"home":0,"away":3,"sign":2,"points":0},"Felix Suneson":{"home":0,"away":3,"sign":2,"points":0},"Martin Haupt Højer":{"home":0,"away":3,"sign":2,"points":0},"Sarah Ferguen":{"home":1,"away":2,"sign":2,"points":0},"Nicolai Trier":{"home":0,"away":2,"sign":2,"points":0},"Jakob Skov":{"home":0,"away":3,"sign":2,"points":0},"Jonas Andersen":{"home":0,"away":1,"sign":2,"points":0},"Nadia Laas":{"home":0,"away":4,"sign":2,"points":0},"Lasse Kjellerup":{"home":1,"away":2,"sign":2,"points":0},"Simon Baudtler":{"home":0,"away":4,"sign":2,"points":0},"Patrick Klarlund":{"home":0,"away":3,"sign":2,"points":0},"Esben Dickenson":{"home":0,"away":0,"sign":"x","points":1},"Rasmus Aabenhuus":{"home":0,"away":2,"sign":2,"points":0},"Michael Weirsøe":{"home":0,"away":2,"sign":2,"points":0},"Morten Jespersen":{"home":0,"away":2,"sign":2,"points":0},"Lars Navntoft":{"home":0,"away":3,"sign":2,"points":0}}},{"round":"Round 1","group":"C","home":"Brasilien","away":"Marokko","result_home":1,"result_away":1,"sign":"x","predictions":{"Thomas Heegaard":{"home":1,"away":1,"sign":"X","points":4},"Frederik Franck":{"home":1,"away":1,"sign":"X","points":4},"Martin Thomsen":{"home":4,"away":1,"sign":1,"points":0},"Sigrid Pepke":{"home":1,"away":1,"sign":"x","points":4},"Felix Suneson":{"home":3,"away":1,"sign":1,"points":0},"Martin Haupt Højer":{"home":3,"away":2,"sign":1,"points":0},"Sarah Ferguen":{"home":3,"away":0,"sign":1,"points":0},"Nicolai Trier":{"home":1,"away":1,"sign":1,"points":3},"Jakob Skov":{"home":3,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":1,"away":2,"sign":"X","points":1},"Nadia Laas":{"home":2,"away":0,"sign":1,"points":0},"Lasse Kjellerup":{"home":2,"away":1,"sign":1,"points":0},"Simon Baudtler":{"home":2,"away":1,"sign":1,"points":0},"Patrick Klarlund":{"home":3,"away":1,"sign":1,"points":0},"Esben Dickenson":{"home":3,"away":0,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":2,"away":1,"sign":1,"points":0},"Michael Weirsøe":{"home":1,"away":0,"sign":1,"points":0},"Morten Jespersen":{"home":3,"away":1,"sign":1,"points":0},"Lars Navntoft":{"home":3,"away":1,"sign":1,"points":0}}},{"round":"Round 1","group":"C","home":"Haiti","away":"Skotland","result_home":0,"result_away":1,"sign":2,"predictions":{"Thomas Heegaard":{"home":0,"away":3,"sign":2,"points":1},"Frederik Franck":{"home":1,"away":3,"sign":2,"points":1},"Martin Thomsen":{"home":0,"away":2,"sign":2,"points":1},"Sigrid Pepke":{"home":0,"away":2,"sign":2,"points":1},"Felix Suneson":{"home":0,"away":3,"sign":2,"points":1},"Martin Haupt Højer":{"home":0,"away":2,"sign":2,"points":1},"Sarah Ferguen":{"home":0,"away":1,"sign":2,"points":4},"Nicolai Trier":{"home":0,"away":0,"sign":"x","points":0},"Jakob Skov":{"home":0,"away":2,"sign":2,"points":1},"Jonas Andersen":{"home":0,"away":1,"sign":2,"points":4},"Nadia Laas":{"home":0,"away":3,"sign":2,"points":1},"Lasse Kjellerup":{"home":1,"away":2,"sign":2,"points":1},"Simon Baudtler":{"home":0,"away":3,"sign":2,"points":1},"Patrick Klarlund":{"home":0,"away":3,"sign":2,"points":1},"Esben Dickenson":{"home":0,"away":2,"sign":2,"points":1},"Rasmus Aabenhuus":{"home":0,"away":2,"sign":2,"points":1},"Michael Weirsøe":{"home":0,"away":1,"sign":2,"points":4},"Morten Jespersen":{"home":0,"away":2,"sign":2,"points":1},"Lars Navntoft":{"home":0,"away":2,"sign":2,"points":1}}},{"round":"Round 1","group":"D","home":"Australien","away":"Tyrkiet","result_home":2,"result_away":0,"sign":1,"predictions":{"Thomas Heegaard":{"home":1,"away":1,"sign":"X","points":0},"Frederik Franck":{"home":0,"away":2,"sign":2,"points":0},"Martin Thomsen":{"home":2,"away":1,"sign":"x","points":0},"Sigrid Pepke":{"home":1,"away":2,"sign":2,"points":0},"Felix Suneson":{"home":1,"away":3,"sign":2,"points":0},"Martin Haupt Højer":{"home":0,"away":3,"sign":2,"points":0},"Sarah Ferguen":{"home":2,"away":2,"sign":"x","points":0},"Nicolai Trier":{"home":0,"away":1,"sign":2,"points":0},"Jakob Skov":{"home":0,"away":2,"sign":2,"points":0},"Jonas Andersen":{"home":0,"away":1,"sign":2,"points":0},"Nadia Laas":{"home":1,"away":2,"sign":2,"points":0},"Lasse Kjellerup":{"home":0,"away":1,"sign":2,"points":0},"Simon Baudtler":{"home":0,"away":2,"sign":2,"points":0},"Patrick Klarlund":{"home":0,"away":2,"sign":2,"points":0},"Esben Dickenson":{"home":1,"away":2,"sign":2,"points":0},"Rasmus Aabenhuus":{"home":0,"away":1,"sign":2,"points":0},"Michael Weirsøe":{"home":1,"away":1,"sign":"x","points":0},"Morten Jespersen":{"home":1,"away":2,"sign":"x","points":0},"Lars Navntoft":{"home":1,"away":1,"sign":"x","points":0}}},{"round":"Round 1","group":"E","home":"Tyskland","away":"Curacao","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":5,"away":0,"sign":1,"points":0},"Frederik Franck":{"home":5,"away":0,"sign":1,"points":0},"Martin Thomsen":{"home":4,"away":0,"sign":1,"points":0},"Sigrid Pepke":{"home":3,"away":0,"sign":1,"points":0},"Felix Suneson":{"home":9,"away":0,"sign":1,"points":0},"Martin Haupt Højer":{"home":4,"away":0,"sign":1,"points":0},"Sarah Ferguen":{"home":5,"away":0,"sign":1,"points":0},"Nicolai Trier":{"home":3,"away":0,"sign":1,"points":0},"Jakob Skov":{"home":5,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":4,"away":0,"sign":1,"points":0},"Nadia Laas":{"home":6,"away":0,"sign":1,"points":0},"Lasse Kjellerup":{"home":4,"away":0,"sign":1,"points":0},"Simon Baudtler":{"home":5,"away":0,"sign":1,"points":0},"Patrick Klarlund":{"home":5,"away":0,"sign":1,"points":0},"Esben Dickenson":{"home":2,"away":0,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":5,"away":0,"sign":1,"points":0},"Michael Weirsøe":{"home":5,"away":0,"sign":1,"points":0},"Morten Jespersen":{"home":5,"away":0,"sign":1,"points":0},"Lars Navntoft":{"home":5,"away":0,"sign":1,"points":0}}},{"round":"Round 1","group":"F","home":"Holland","away":"Japan","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":2,"away":1,"sign":1,"points":0},"Frederik Franck":{"home":2,"away":2,"sign":"X","points":0},"Martin Thomsen":{"home":2,"away":1,"sign":1,"points":0},"Sigrid Pepke":{"home":2,"away":1,"sign":1,"points":0},"Felix Suneson":{"home":2,"away":1,"sign":1,"points":0},"Martin Haupt Højer":{"home":2,"away":1,"sign":1,"points":0},"Sarah Ferguen":{"home":3,"away":0,"sign":1,"points":0},"Nicolai Trier":{"home":1,"away":1,"sign":"x","points":0},"Jakob Skov":{"home":1,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":2,"away":2,"sign":1,"points":0},"Nadia Laas":{"home":3,"away":1,"sign":1,"points":0},"Lasse Kjellerup":{"home":2,"away":1,"sign":1,"points":0},"Simon Baudtler":{"home":1,"away":1,"sign":1,"points":0},"Patrick Klarlund":{"home":3,"away":2,"sign":1,"points":0},"Esben Dickenson":{"home":2,"away":1,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":2,"away":1,"sign":1,"points":0},"Michael Weirsøe":{"home":2,"away":2,"sign":"x","points":0},"Morten Jespersen":{"home":2,"away":1,"sign":1,"points":0},"Lars Navntoft":{"home":1,"away":1,"sign":"x","points":0}}},{"round":"Round 1","group":"E","home":"Elfenbenskysten","away":"Ecuador","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":1,"away":2,"sign":2,"points":0},"Frederik Franck":{"home":1,"away":1,"sign":"X","points":0},"Martin Thomsen":{"home":0,"away":0,"sign":1,"points":0},"Sigrid Pepke":{"home":0,"away":2,"sign":2,"points":0},"Felix Suneson":{"home":0,"away":0,"sign":"x","points":0},"Martin Haupt Højer":{"home":1,"away":1,"sign":"x","points":0},"Sarah Ferguen":{"home":0,"away":2,"sign":2,"points":0},"Nicolai Trier":{"home":1,"away":1,"sign":"x","points":0},"Jakob Skov":{"home":2,"away":2,"sign":"x","points":0},"Jonas Andersen":{"home":2,"away":1,"sign":"X","points":0},"Nadia Laas":{"home":0,"away":3,"sign":2,"points":0},"Lasse Kjellerup":{"home":0,"away":1,"sign":2,"points":0},"Simon Baudtler":{"home":0,"away":0,"sign":"x","points":0},"Patrick Klarlund":{"home":2,"away":0,"sign":1,"points":0},"Esben Dickenson":{"home":0,"away":0,"sign":"x","points":0},"Rasmus Aabenhuus":{"home":1,"away":1,"sign":"x","points":0},"Michael Weirsøe":{"home":1,"away":2,"sign":2,"points":0},"Morten Jespersen":{"home":1,"away":1,"sign":"x","points":0},"Lars Navntoft":{"home":0,"away":1,"sign":2,"points":0}}},{"round":"Round 1","group":"F","home":"Sverige","away":"Tunesien","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":1,"away":0,"sign":1,"points":0},"Frederik Franck":{"home":0,"away":0,"sign":"X","points":0},"Martin Thomsen":{"home":1,"away":0,"sign":1,"points":0},"Sigrid Pepke":{"home":1,"away":0,"sign":1,"points":0},"Felix Suneson":{"home":1,"away":0,"sign":1,"points":0},"Martin Haupt Højer":{"home":1,"away":2,"sign":2,"points":0},"Sarah Ferguen":{"home":1,"away":2,"sign":2,"points":0},"Nicolai Trier":{"home":1,"away":1,"sign":"x","points":0},"Jakob Skov":{"home":1,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":1,"away":1,"sign":"X","points":0},"Nadia Laas":{"home":2,"away":1,"sign":1,"points":0},"Lasse Kjellerup":{"home":1,"away":0,"sign":1,"points":0},"Simon Baudtler":{"home":2,"away":2,"sign":1,"points":0},"Patrick Klarlund":{"home":2,"away":0,"sign":1,"points":0},"Esben Dickenson":{"home":1,"away":0,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":1,"away":0,"sign":1,"points":0},"Michael Weirsøe":{"home":0,"away":1,"sign":"x","points":0},"Morten Jespersen":{"home":2,"away":0,"sign":1,"points":0},"Lars Navntoft":{"home":1,"away":0,"sign":1,"points":0}}},{"round":"Round 1","group":"H","home":"Spanien","away":"Kap Verde","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":5,"away":0,"sign":1,"points":0},"Frederik Franck":{"home":3,"away":0,"sign":1,"points":0},"Martin Thomsen":{"home":6,"away":0,"sign":1,"points":0},"Sigrid Pepke":{"home":4,"away":0,"sign":1,"points":0},"Felix Suneson":{"home":6,"away":0,"sign":1,"points":0},"Martin Haupt Højer":{"home":5,"away":0,"sign":1,"points":0},"Sarah Ferguen":{"home":4,"away":0,"sign":1,"points":0},"Nicolai Trier":{"home":3,"away":0,"sign":1,"points":0},"Jakob Skov":{"home":3,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":3,"away":0,"sign":1,"points":0},"Nadia Laas":{"home":6,"away":0,"sign":1,"points":0},"Lasse Kjellerup":{"home":3,"away":0,"sign":1,"points":0},"Simon Baudtler":{"home":6,"away":0,"sign":1,"points":0},"Patrick Klarlund":{"home":6,"away":0,"sign":1,"points":0},"Esben Dickenson":{"home":4,"away":0,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":4,"away":0,"sign":1,"points":0},"Michael Weirsøe":{"home":4,"away":0,"sign":1,"points":0},"Morten Jespersen":{"home":4,"away":0,"sign":1,"points":0},"Lars Navntoft":{"home":6,"away":0,"sign":1,"points":0}}},{"round":"Round 1","group":"G","home":"Belgien","away":"Egypten","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":2,"away":0,"sign":1,"points":0},"Frederik Franck":{"home":3,"away":1,"sign":1,"points":0},"Martin Thomsen":{"home":3,"away":2,"sign":"x","points":0},"Sigrid Pepke":{"home":1,"away":1,"sign":"x","points":0},"Felix Suneson":{"home":2,"away":0,"sign":1,"points":0},"Martin Haupt Højer":{"home":2,"away":0,"sign":1,"points":0},"Sarah Ferguen":{"home":3,"away":2,"sign":1,"points":0},"Nicolai Trier":{"home":2,"away":0,"sign":1,"points":0},"Jakob Skov":{"home":1,"away":1,"sign":"x","points":0},"Jonas Andersen":{"home":1,"away":1,"sign":"X","points":0},"Nadia Laas":{"home":2,"away":1,"sign":1,"points":0},"Lasse Kjellerup":{"home":2,"away":1,"sign":1,"points":0},"Simon Baudtler":{"home":1,"away":0,"sign":1,"points":0},"Patrick Klarlund":{"home":2,"away":1,"sign":1,"points":0},"Esben Dickenson":{"home":3,"away":1,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":2,"away":0,"sign":1,"points":0},"Michael Weirsøe":{"home":2,"away":1,"sign":1,"points":0},"Morten Jespersen":{"home":2,"away":0,"sign":1,"points":0},"Lars Navntoft":{"home":2,"away":1,"sign":1,"points":0}}},{"round":"Round 1","group":"H","home":"Saudi Arabien","away":"Uruguay","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":0,"away":2,"sign":2,"points":0},"Frederik Franck":{"home":1,"away":2,"sign":2,"points":0},"Martin Thomsen":{"home":1,"away":3,"sign":2,"points":0},"Sigrid Pepke":{"home":0,"away":2,"sign":2,"points":0},"Felix Suneson":{"home":0,"away":3,"sign":2,"points":0},"Martin Haupt Højer":{"home":0,"away":2,"sign":2,"points":0},"Sarah Ferguen":{"home":1,"away":2,"sign":2,"points":0},"Nicolai Trier":{"home":0,"away":1,"sign":2,"points":0},"Jakob Skov":{"home":0,"away":2,"sign":2,"points":0},"Jonas Andersen":{"home":0,"away":2,"sign":2,"points":0},"Nadia Laas":{"home":1,"away":2,"sign":2,"points":0},"Lasse Kjellerup":{"home":0,"away":2,"sign":2,"points":0},"Simon Baudtler":{"home":0,"away":2,"sign":2,"points":0},"Patrick Klarlund":{"home":1,"away":3,"sign":2,"points":0},"Esben Dickenson":{"home":0,"away":3,"sign":2,"points":0},"Rasmus Aabenhuus":{"home":0,"away":1,"sign":2,"points":0},"Michael Weirsøe":{"home":1,"away":2,"sign":2,"points":0},"Morten Jespersen":{"home":0,"away":3,"sign":2,"points":0},"Lars Navntoft":{"home":1,"away":2,"sign":2,"points":0}}},{"round":"Round 1","group":"G","home":"Iran","away":"New Zealand","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":1,"away":0,"sign":1,"points":0},"Frederik Franck":{"home":2,"away":0,"sign":1,"points":0},"Martin Thomsen":{"home":0,"away":1,"sign":2,"points":0},"Sigrid Pepke":{"home":1,"away":0,"sign":1,"points":0},"Felix Suneson":{"home":1,"away":0,"sign":1,"points":0},"Martin Haupt Højer":{"home":1,"away":1,"sign":"x","points":0},"Sarah Ferguen":{"home":1,"away":1,"sign":"x","points":0},"Nicolai Trier":{"home":1,"away":0,"sign":"x","points":0},"Jakob Skov":{"home":1,"away":1,"sign":"x","points":0},"Jonas Andersen":{"home":0,"away":0,"sign":1,"points":0},"Nadia Laas":{"home":1,"away":1,"sign":"x","points":0},"Lasse Kjellerup":{"home":2,"away":1,"sign":1,"points":0},"Simon Baudtler":{"home":1,"away":1,"sign":"x","points":0},"Patrick Klarlund":{"home":1,"away":0,"sign":1,"points":0},"Esben Dickenson":{"home":2,"away":0,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":1,"away":1,"sign":"x","points":0},"Michael Weirsøe":{"home":0,"away":0,"sign":"x","points":0},"Morten Jespersen":{"home":2,"away":1,"sign":"x","points":0},"Lars Navntoft":{"home":1,"away":0,"sign":1,"points":0}}},{"round":"Round 1","group":"I","home":"Frankrig","away":"Senegal","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":2,"away":1,"sign":1,"points":0},"Frederik Franck":{"home":2,"away":0,"sign":1,"points":0},"Martin Thomsen":{"home":3,"away":0,"sign":1,"points":0},"Sigrid Pepke":{"home":2,"away":1,"sign":1,"points":0},"Felix Suneson":{"home":3,"away":1,"sign":1,"points":0},"Martin Haupt Højer":{"home":2,"away":1,"sign":1,"points":0},"Sarah Ferguen":{"home":4,"away":0,"sign":1,"points":0},"Nicolai Trier":{"home":2,"away":0,"sign":1,"points":0},"Jakob Skov":{"home":2,"away":0,"sign":2,"points":0},"Jonas Andersen":{"home":3,"away":1,"sign":1,"points":0},"Nadia Laas":{"home":4,"away":2,"sign":1,"points":0},"Lasse Kjellerup":{"home":2,"away":1,"sign":1,"points":0},"Simon Baudtler":{"home":3,"away":0,"sign":1,"points":0},"Patrick Klarlund":{"home":3,"away":2,"sign":1,"points":0},"Esben Dickenson":{"home":2,"away":1,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":3,"away":1,"sign":1,"points":0},"Michael Weirsøe":{"home":3,"away":1,"sign":1,"points":0},"Morten Jespersen":{"home":3,"away":1,"sign":1,"points":0},"Lars Navntoft":{"home":3,"away":0,"sign":1,"points":0}}},{"round":"Round 1","group":"I","home":"Irak","away":"Norge","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":1,"away":3,"sign":2,"points":0},"Frederik Franck":{"home":0,"away":5,"sign":2,"points":0},"Martin Thomsen":{"home":1,"away":3,"sign":2,"points":0},"Sigrid Pepke":{"home":0,"away":2,"sign":2,"points":0},"Felix Suneson":{"home":0,"away":4,"sign":2,"points":0},"Martin Haupt Højer":{"home":0,"away":3,"sign":2,"points":0},"Sarah Ferguen":{"home":1,"away":2,"sign":2,"points":0},"Nicolai Trier":{"home":1,"away":1,"sign":"x","points":0},"Jakob Skov":{"home":0,"away":4,"sign":2,"points":0},"Jonas Andersen":{"home":0,"away":2,"sign":2,"points":0},"Nadia Laas":{"home":1,"away":4,"sign":2,"points":0},"Lasse Kjellerup":{"home":0,"away":2,"sign":2,"points":0},"Simon Baudtler":{"home":0,"away":3,"sign":2,"points":0},"Patrick Klarlund":{"home":0,"away":4,"sign":2,"points":0},"Esben Dickenson":{"home":1,"away":3,"sign":2,"points":0},"Rasmus Aabenhuus":{"home":1,"away":2,"sign":2,"points":0},"Michael Weirsøe":{"home":0,"away":3,"sign":2,"points":0},"Morten Jespersen":{"home":0,"away":3,"sign":2,"points":0},"Lars Navntoft":{"home":0,"away":5,"sign":2,"points":0}}},{"round":"Round 1","group":"J","home":"Argentina","away":"Algeriet","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":2,"away":0,"sign":1,"points":0},"Frederik Franck":{"home":3,"away":0,"sign":1,"points":0},"Martin Thomsen":{"home":4,"away":0,"sign":1,"points":0},"Sigrid Pepke":{"home":3,"away":0,"sign":1,"points":0},"Felix Suneson":{"home":2,"away":0,"sign":1,"points":0},"Martin Haupt Højer":{"home":2,"away":0,"sign":1,"points":0},"Sarah Ferguen":{"home":3,"away":0,"sign":1,"points":0},"Nicolai Trier":{"home":2,"away":0,"sign":1,"points":0},"Jakob Skov":{"home":2,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":3,"away":1,"sign":1,"points":0},"Nadia Laas":{"home":2,"away":1,"sign":1,"points":0},"Lasse Kjellerup":{"home":3,"away":0,"sign":1,"points":0},"Simon Baudtler":{"home":2,"away":0,"sign":1,"points":0},"Patrick Klarlund":{"home":3,"away":1,"sign":1,"points":0},"Esben Dickenson":{"home":2,"away":0,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":2,"away":1,"sign":1,"points":0},"Michael Weirsøe":{"home":2,"away":0,"sign":1,"points":0},"Morten Jespersen":{"home":2,"away":0,"sign":1,"points":0},"Lars Navntoft":{"home":3,"away":0,"sign":1,"points":0}}},{"round":"Round 1","group":"J","home":"Østrig","away":"Jordan","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":2,"away":0,"sign":1,"points":0},"Frederik Franck":{"home":1,"away":0,"sign":1,"points":0},"Martin Thomsen":{"home":1,"away":0,"sign":"x","points":0},"Sigrid Pepke":{"home":1,"away":0,"sign":1,"points":0},"Felix Suneson":{"home":4,"away":1,"sign":1,"points":0},"Martin Haupt Højer":{"home":1,"away":0,"sign":1,"points":0},"Sarah Ferguen":{"home":3,"away":1,"sign":1,"points":0},"Nicolai Trier":{"home":2,"away":0,"sign":1,"points":0},"Jakob Skov":{"home":1,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":1,"away":0,"sign":1,"points":0},"Nadia Laas":{"home":2,"away":0,"sign":1,"points":0},"Lasse Kjellerup":{"home":2,"away":0,"sign":1,"points":0},"Simon Baudtler":{"home":3,"away":0,"sign":1,"points":0},"Patrick Klarlund":{"home":2,"away":0,"sign":1,"points":0},"Esben Dickenson":{"home":1,"away":0,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":2,"away":0,"sign":1,"points":0},"Michael Weirsøe":{"home":2,"away":0,"sign":1,"points":0},"Morten Jespersen":{"home":3,"away":0,"sign":1,"points":0},"Lars Navntoft":{"home":2,"away":0,"sign":1,"points":0}}},{"round":"Round 1","group":"K","home":"Portugal","away":"DR Congo","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":2,"away":0,"sign":1,"points":0},"Frederik Franck":{"home":3,"away":0,"sign":1,"points":0},"Martin Thomsen":{"home":3,"away":1,"sign":1,"points":0},"Sigrid Pepke":{"home":2,"away":0,"sign":1,"points":0},"Felix Suneson":{"home":2,"away":0,"sign":1,"points":0},"Martin Haupt Højer":{"home":3,"away":0,"sign":1,"points":0},"Sarah Ferguen":{"home":4,"away":0,"sign":1,"points":0},"Nicolai Trier":{"home":2,"away":0,"sign":1,"points":0},"Jakob Skov":{"home":2,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":3,"away":1,"sign":1,"points":0},"Nadia Laas":{"home":3,"away":0,"sign":1,"points":0},"Lasse Kjellerup":{"home":3,"away":0,"sign":1,"points":0},"Simon Baudtler":{"home":2,"away":0,"sign":1,"points":0},"Patrick Klarlund":{"home":3,"away":2,"sign":1,"points":0},"Esben Dickenson":{"home":3,"away":0,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":2,"away":0,"sign":1,"points":0},"Michael Weirsøe":{"home":4,"away":1,"sign":1,"points":0},"Morten Jespersen":{"home":2,"away":0,"sign":1,"points":0},"Lars Navntoft":{"home":4,"away":0,"sign":1,"points":0}}},{"round":"Round 1","group":"L","home":"England","away":"Kroatien","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":1,"away":1,"sign":1,"points":0},"Frederik Franck":{"home":1,"away":1,"sign":"X","points":0},"Martin Thomsen":{"home":1,"away":1,"sign":1,"points":0},"Sigrid Pepke":{"home":1,"away":0,"sign":1,"points":0},"Felix Suneson":{"home":1,"away":1,"sign":"x","points":0},"Martin Haupt Højer":{"home":2,"away":1,"sign":1,"points":0},"Sarah Ferguen":{"home":2,"away":2,"sign":"x","points":0},"Nicolai Trier":{"home":1,"away":0,"sign":1,"points":0},"Jakob Skov":{"home":1,"away":2,"sign":2,"points":0},"Jonas Andersen":{"home":2,"away":2,"sign":"X","points":0},"Nadia Laas":{"home":2,"away":1,"sign":1,"points":0},"Lasse Kjellerup":{"home":2,"away":1,"sign":1,"points":0},"Simon Baudtler":{"home":2,"away":1,"sign":1,"points":0},"Patrick Klarlund":{"home":3,"away":2,"sign":1,"points":0},"Esben Dickenson":{"home":2,"away":2,"sign":"x","points":0},"Rasmus Aabenhuus":{"home":2,"away":1,"sign":1,"points":0},"Michael Weirsøe":{"home":1,"away":0,"sign":1,"points":0},"Morten Jespersen":{"home":2,"away":1,"sign":"x","points":0},"Lars Navntoft":{"home":2,"away":1,"sign":1,"points":0}}},{"round":"Round 1","group":"L","home":"Ghana","away":"Panama","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":1,"away":2,"sign":2,"points":0},"Frederik Franck":{"home":2,"away":0,"sign":1,"points":0},"Martin Thomsen":{"home":2,"away":0,"sign":1,"points":0},"Sigrid Pepke":{"home":1,"away":2,"sign":2,"points":0},"Felix Suneson":{"home":0,"away":0,"sign":"x","points":0},"Martin Haupt Højer":{"home":2,"away":0,"sign":1,"points":0},"Sarah Ferguen":{"home":1,"away":1,"sign":"x","points":0},"Nicolai Trier":{"home":2,"away":1,"sign":1,"points":0},"Jakob Skov":{"home":1,"away":1,"sign":"x","points":0},"Jonas Andersen":{"home":1,"away":1,"sign":1,"points":0},"Nadia Laas":{"home":1,"away":1,"sign":"x","points":0},"Lasse Kjellerup":{"home":2,"away":1,"sign":1,"points":0},"Simon Baudtler":{"home":1,"away":0,"sign":"x","points":0},"Patrick Klarlund":{"home":1,"away":1,"sign":"x","points":0},"Esben Dickenson":{"home":2,"away":2,"sign":"x","points":0},"Rasmus Aabenhuus":{"home":2,"away":0,"sign":1,"points":0},"Michael Weirsøe":{"home":2,"away":1,"sign":1,"points":0},"Morten Jespersen":{"home":2,"away":0,"sign":1,"points":0},"Lars Navntoft":{"home":2,"away":0,"sign":1,"points":0}}},{"round":"Round 1","group":"K","home":"Uzbekistan","away":"Colombia","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":0,"away":2,"sign":2,"points":0},"Frederik Franck":{"home":0,"away":2,"sign":2,"points":0},"Martin Thomsen":{"home":0,"away":3,"sign":2,"points":0},"Sigrid Pepke":{"home":0,"away":2,"sign":2,"points":0},"Felix Suneson":{"home":1,"away":3,"sign":2,"points":0},"Martin Haupt Højer":{"home":0,"away":2,"sign":2,"points":0},"Sarah Ferguen":{"home":1,"away":4,"sign":2,"points":0},"Nicolai Trier":{"home":0,"away":1,"sign":2,"points":0},"Jakob Skov":{"home":0,"away":3,"sign":2,"points":0},"Jonas Andersen":{"home":0,"away":2,"sign":2,"points":0},"Nadia Laas":{"home":0,"away":0,"sign":"x","points":0},"Lasse Kjellerup":{"home":0,"away":2,"sign":2,"points":0},"Simon Baudtler":{"home":0,"away":3,"sign":2,"points":0},"Patrick Klarlund":{"home":0,"away":2,"sign":2,"points":0},"Esben Dickenson":{"home":0,"away":2,"sign":2,"points":0},"Rasmus Aabenhuus":{"home":0,"away":1,"sign":2,"points":0},"Michael Weirsøe":{"home":0,"away":2,"sign":2,"points":0},"Morten Jespersen":{"home":0,"away":2,"sign":2,"points":0},"Lars Navntoft":{"home":0,"away":3,"sign":2,"points":0}}},{"round":"Round 2","group":"A","home":"Tjekkiet","away":"Sydafrika","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":2,"away":1,"sign":1,"points":0},"Frederik Franck":{"home":1,"away":0,"sign":1,"points":0},"Martin Thomsen":{"home":2,"away":2,"sign":1,"points":0},"Sigrid Pepke":{"home":1,"away":0,"sign":1,"points":0},"Felix Suneson":{"home":1,"away":1,"sign":"x","points":0},"Martin Haupt Højer":{"home":1,"away":1,"sign":"x","points":0},"Sarah Ferguen":{"home":2,"away":1,"sign":1,"points":0},"Nicolai Trier":{"home":1,"away":1,"sign":"x","points":0},"Jakob Skov":{"home":1,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":1,"away":1,"sign":2,"points":0},"Nadia Laas":{"home":3,"away":1,"sign":1,"points":0},"Lasse Kjellerup":{"home":1,"away":0,"sign":1,"points":0},"Simon Baudtler":{"home":2,"away":0,"sign":1,"points":0},"Patrick Klarlund":{"home":2,"away":2,"sign":"x","points":0},"Esben Dickenson":{"home":2,"away":1,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":2,"away":1,"sign":1,"points":0},"Michael Weirsøe":{"home":2,"away":1,"sign":1,"points":0},"Morten Jespersen":{"home":2,"away":1,"sign":1,"points":0},"Lars Navntoft":{"home":1,"away":0,"sign":1,"points":0}}},{"round":"Round 2","group":"B","home":"Schweiz","away":"Bosnien-Hercegovina","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":2,"away":1,"sign":1,"points":0},"Frederik Franck":{"home":2,"away":1,"sign":1,"points":0},"Martin Thomsen":{"home":1,"away":1,"sign":1,"points":0},"Sigrid Pepke":{"home":0,"away":0,"sign":"x","points":0},"Felix Suneson":{"home":2,"away":1,"sign":1,"points":0},"Martin Haupt Højer":{"home":3,"away":1,"sign":1,"points":0},"Sarah Ferguen":{"home":2,"away":0,"sign":1,"points":0},"Nicolai Trier":{"home":1,"away":1,"sign":1,"points":0},"Jakob Skov":{"home":2,"away":1,"sign":1,"points":0},"Jonas Andersen":{"home":1,"away":1,"sign":1,"points":0},"Nadia Laas":{"home":2,"away":0,"sign":1,"points":0},"Lasse Kjellerup":{"home":2,"away":1,"sign":1,"points":0},"Simon Baudtler":{"home":3,"away":1,"sign":"x","points":0},"Patrick Klarlund":{"home":2,"away":1,"sign":1,"points":0},"Esben Dickenson":{"home":2,"away":1,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":1,"away":0,"sign":1,"points":0},"Michael Weirsøe":{"home":1,"away":0,"sign":1,"points":0},"Morten Jespersen":{"home":1,"away":1,"sign":"x","points":0},"Lars Navntoft":{"home":2,"away":0,"sign":1,"points":0}}},{"round":"Round 2","group":"B","home":"Canada","away":"Qatar","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":2,"away":0,"sign":1,"points":0},"Frederik Franck":{"home":2,"away":0,"sign":1,"points":0},"Martin Thomsen":{"home":2,"away":0,"sign":1,"points":0},"Sigrid Pepke":{"home":1,"away":0,"sign":1,"points":0},"Felix Suneson":{"home":2,"away":0,"sign":1,"points":0},"Martin Haupt Højer":{"home":1,"away":0,"sign":1,"points":0},"Sarah Ferguen":{"home":3,"away":1,"sign":1,"points":0},"Nicolai Trier":{"home":1,"away":1,"sign":1,"points":0},"Jakob Skov":{"home":2,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":3,"away":1,"sign":1,"points":0},"Nadia Laas":{"home":1,"away":1,"sign":"x","points":0},"Lasse Kjellerup":{"home":2,"away":1,"sign":1,"points":0},"Simon Baudtler":{"home":2,"away":0,"sign":1,"points":0},"Patrick Klarlund":{"home":3,"away":1,"sign":1,"points":0},"Esben Dickenson":{"home":1,"away":2,"sign":2,"points":0},"Rasmus Aabenhuus":{"home":1,"away":0,"sign":1,"points":0},"Michael Weirsøe":{"home":2,"away":0,"sign":1,"points":0},"Morten Jespersen":{"home":3,"away":0,"sign":1,"points":0},"Lars Navntoft":{"home":2,"away":1,"sign":1,"points":0}}},{"round":"Round 2","group":"A","home":"Mexico","away":"Sydkorea","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":2,"away":1,"sign":1,"points":0},"Frederik Franck":{"home":3,"away":1,"sign":1,"points":0},"Martin Thomsen":{"home":2,"away":1,"sign":1,"points":0},"Sigrid Pepke":{"home":1,"away":2,"sign":2,"points":0},"Felix Suneson":{"home":2,"away":1,"sign":1,"points":0},"Martin Haupt Højer":{"home":1,"away":1,"sign":"x","points":0},"Sarah Ferguen":{"home":2,"away":0,"sign":1,"points":0},"Nicolai Trier":{"home":1,"away":1,"sign":"x","points":0},"Jakob Skov":{"home":2,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":2,"away":1,"sign":1,"points":0},"Nadia Laas":{"home":3,"away":1,"sign":1,"points":0},"Lasse Kjellerup":{"home":2,"away":1,"sign":1,"points":0},"Simon Baudtler":{"home":2,"away":0,"sign":1,"points":0},"Patrick Klarlund":{"home":2,"away":1,"sign":1,"points":0},"Esben Dickenson":{"home":1,"away":0,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":1,"away":1,"sign":"x","points":0},"Michael Weirsøe":{"home":1,"away":1,"sign":"x","points":0},"Morten Jespersen":{"home":1,"away":1,"sign":"x","points":0},"Lars Navntoft":{"home":2,"away":2,"sign":"x","points":0}}},{"round":"Round 2","group":"D","home":"USA","away":"Australien","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":2,"away":1,"sign":1,"points":0},"Frederik Franck":{"home":2,"away":1,"sign":1,"points":0},"Martin Thomsen":{"home":2,"away":1,"sign":"x","points":0},"Sigrid Pepke":{"home":2,"away":0,"sign":1,"points":0},"Felix Suneson":{"home":2,"away":0,"sign":1,"points":0},"Martin Haupt Højer":{"home":1,"away":1,"sign":"x","points":0},"Sarah Ferguen":{"home":1,"away":0,"sign":1,"points":0},"Nicolai Trier":{"home":1,"away":1,"sign":"x","points":0},"Jakob Skov":{"home":1,"away":1,"sign":"x","points":0},"Jonas Andersen":{"home":0,"away":0,"sign":1,"points":0},"Nadia Laas":{"home":2,"away":2,"sign":"x","points":0},"Lasse Kjellerup":{"home":2,"away":1,"sign":1,"points":0},"Simon Baudtler":{"home":3,"away":2,"sign":1,"points":0},"Patrick Klarlund":{"home":3,"away":0,"sign":1,"points":0},"Esben Dickenson":{"home":2,"away":1,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":1,"away":1,"sign":"x","points":0},"Michael Weirsøe":{"home":2,"away":1,"sign":1,"points":0},"Morten Jespersen":{"home":1,"away":1,"sign":"x","points":0},"Lars Navntoft":{"home":2,"away":0,"sign":1,"points":0}}},{"round":"Round 2","group":"C","home":"Skotland","away":"Marokko","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":1,"away":1,"sign":"X","points":0},"Frederik Franck":{"home":0,"away":2,"sign":2,"points":0},"Martin Thomsen":{"home":1,"away":1,"sign":1,"points":0},"Sigrid Pepke":{"home":0,"away":2,"sign":2,"points":0},"Felix Suneson":{"home":1,"away":2,"sign":2,"points":0},"Martin Haupt Højer":{"home":2,"away":2,"sign":"x","points":0},"Sarah Ferguen":{"home":0,"away":2,"sign":2,"points":0},"Nicolai Trier":{"home":0,"away":2,"sign":"x","points":0},"Jakob Skov":{"home":0,"away":2,"sign":2,"points":0},"Jonas Andersen":{"home":0,"away":2,"sign":2,"points":0},"Nadia Laas":{"home":2,"away":1,"sign":1,"points":0},"Lasse Kjellerup":{"home":1,"away":2,"sign":2,"points":0},"Simon Baudtler":{"home":2,"away":1,"sign":1,"points":0},"Patrick Klarlund":{"home":1,"away":2,"sign":2,"points":0},"Esben Dickenson":{"home":2,"away":1,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":2,"away":2,"sign":"x","points":0},"Michael Weirsøe":{"home":0,"away":2,"sign":2,"points":0},"Morten Jespersen":{"home":1,"away":2,"sign":2,"points":0},"Lars Navntoft":{"home":0,"away":1,"sign":2,"points":0}}},{"round":"Round 2","group":"C","home":"Brasilien","away":"Haiti","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":4,"away":0,"sign":1,"points":0},"Frederik Franck":{"home":4,"away":0,"sign":1,"points":0},"Martin Thomsen":{"home":3,"away":0,"sign":1,"points":0},"Sigrid Pepke":{"home":3,"away":0,"sign":1,"points":0},"Felix Suneson":{"home":7,"away":0,"sign":1,"points":0},"Martin Haupt Højer":{"home":3,"away":0,"sign":1,"points":0},"Sarah Ferguen":{"home":5,"away":0,"sign":1,"points":0},"Nicolai Trier":{"home":2,"away":0,"sign":1,"points":0},"Jakob Skov":{"home":4,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":4,"away":0,"sign":1,"points":0},"Nadia Laas":{"home":3,"away":0,"sign":1,"points":0},"Lasse Kjellerup":{"home":4,"away":0,"sign":1,"points":0},"Simon Baudtler":{"home":5,"away":1,"sign":1,"points":0},"Patrick Klarlund":{"home":3,"away":0,"sign":1,"points":0},"Esben Dickenson":{"home":4,"away":0,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":3,"away":0,"sign":1,"points":0},"Michael Weirsøe":{"home":4,"away":1,"sign":1,"points":0},"Morten Jespersen":{"home":4,"away":0,"sign":1,"points":0},"Lars Navntoft":{"home":4,"away":0,"sign":1,"points":0}}},{"round":"Round 2","group":"D","home":"Tyrkiet","away":"Paraguay","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":1,"away":1,"sign":"X","points":0},"Frederik Franck":{"home":2,"away":1,"sign":1,"points":0},"Martin Thomsen":{"home":1,"away":1,"sign":1,"points":0},"Sigrid Pepke":{"home":1,"away":1,"sign":"x","points":0},"Felix Suneson":{"home":2,"away":0,"sign":1,"points":0},"Martin Haupt Højer":{"home":2,"away":1,"sign":1,"points":0},"Sarah Ferguen":{"home":2,"away":1,"sign":1,"points":0},"Nicolai Trier":{"home":1,"away":1,"sign":"x","points":0},"Jakob Skov":{"home":2,"away":1,"sign":1,"points":0},"Jonas Andersen":{"home":2,"away":1,"sign":"X","points":0},"Nadia Laas":{"home":1,"away":2,"sign":2,"points":0},"Lasse Kjellerup":{"home":1,"away":0,"sign":1,"points":0},"Simon Baudtler":{"home":2,"away":2,"sign":1,"points":0},"Patrick Klarlund":{"home":2,"away":1,"sign":1,"points":0},"Esben Dickenson":{"home":1,"away":0,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":2,"away":0,"sign":1,"points":0},"Michael Weirsøe":{"home":2,"away":1,"sign":1,"points":0},"Morten Jespersen":{"home":1,"away":0,"sign":1,"points":0},"Lars Navntoft":{"home":1,"away":1,"sign":"x","points":0}}},{"round":"Round 2","group":"F","home":"Holland","away":"Sverige","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":2,"away":1,"sign":1,"points":0},"Frederik Franck":{"home":2,"away":0,"sign":1,"points":0},"Martin Thomsen":{"home":3,"away":1,"sign":1,"points":0},"Sigrid Pepke":{"home":1,"away":0,"sign":1,"points":0},"Felix Suneson":{"home":2,"away":1,"sign":1,"points":0},"Martin Haupt Højer":{"home":3,"away":1,"sign":1,"points":0},"Sarah Ferguen":{"home":3,"away":1,"sign":1,"points":0},"Nicolai Trier":{"home":2,"away":0,"sign":1,"points":0},"Jakob Skov":{"home":2,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":3,"away":1,"sign":1,"points":0},"Nadia Laas":{"home":1,"away":1,"sign":"x","points":0},"Lasse Kjellerup":{"home":2,"away":1,"sign":1,"points":0},"Simon Baudtler":{"home":3,"away":1,"sign":1,"points":0},"Patrick Klarlund":{"home":3,"away":1,"sign":1,"points":0},"Esben Dickenson":{"home":3,"away":1,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":2,"away":1,"sign":1,"points":0},"Michael Weirsøe":{"home":3,"away":1,"sign":1,"points":0},"Morten Jespersen":{"home":2,"away":0,"sign":1,"points":0},"Lars Navntoft":{"home":2,"away":1,"sign":1,"points":0}}},{"round":"Round 2","group":"E","home":"Tyskland","away":"Elfenbenskysten","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":3,"away":1,"sign":1,"points":0},"Frederik Franck":{"home":2,"away":0,"sign":1,"points":0},"Martin Thomsen":{"home":4,"away":1,"sign":1,"points":0},"Sigrid Pepke":{"home":3,"away":0,"sign":1,"points":0},"Felix Suneson":{"home":1,"away":0,"sign":1,"points":0},"Martin Haupt Højer":{"home":2,"away":2,"sign":"x","points":0},"Sarah Ferguen":{"home":4,"away":0,"sign":1,"points":0},"Nicolai Trier":{"home":2,"away":0,"sign":1,"points":0},"Jakob Skov":{"home":3,"away":1,"sign":1,"points":0},"Jonas Andersen":{"home":2,"away":1,"sign":"X","points":0},"Nadia Laas":{"home":4,"away":0,"sign":1,"points":0},"Lasse Kjellerup":{"home":2,"away":0,"sign":1,"points":0},"Simon Baudtler":{"home":3,"away":1,"sign":1,"points":0},"Patrick Klarlund":{"home":4,"away":1,"sign":1,"points":0},"Esben Dickenson":{"home":2,"away":0,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":3,"away":0,"sign":1,"points":0},"Michael Weirsøe":{"home":2,"away":0,"sign":1,"points":0},"Morten Jespersen":{"home":3,"away":1,"sign":1,"points":0},"Lars Navntoft":{"home":3,"away":1,"sign":1,"points":0}}},{"round":"Round 2","group":"E","home":"Ecuador","away":"Curacao","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":3,"away":0,"sign":1,"points":0},"Frederik Franck":{"home":1,"away":0,"sign":1,"points":0},"Martin Thomsen":{"home":0,"away":0,"sign":1,"points":0},"Sigrid Pepke":{"home":2,"away":0,"sign":1,"points":0},"Felix Suneson":{"home":6,"away":0,"sign":1,"points":0},"Martin Haupt Højer":{"home":2,"away":0,"sign":1,"points":0},"Sarah Ferguen":{"home":3,"away":0,"sign":1,"points":0},"Nicolai Trier":{"home":1,"away":1,"sign":1,"points":0},"Jakob Skov":{"home":2,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":3,"away":1,"sign":1,"points":0},"Nadia Laas":{"home":1,"away":0,"sign":1,"points":0},"Lasse Kjellerup":{"home":2,"away":0,"sign":1,"points":0},"Simon Baudtler":{"home":0,"away":0,"sign":1,"points":0},"Patrick Klarlund":{"home":2,"away":0,"sign":1,"points":0},"Esben Dickenson":{"home":2,"away":0,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":2,"away":0,"sign":1,"points":0},"Michael Weirsøe":{"home":3,"away":0,"sign":1,"points":0},"Morten Jespersen":{"home":3,"away":0,"sign":1,"points":0},"Lars Navntoft":{"home":3,"away":0,"sign":1,"points":0}}},{"round":"Round 2","group":"F","home":"Tunesien","away":"Japan","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":1,"away":1,"sign":"X","points":0},"Frederik Franck":{"home":1,"away":3,"sign":2,"points":0},"Martin Thomsen":{"home":1,"away":2,"sign":"x","points":0},"Sigrid Pepke":{"home":1,"away":1,"sign":"x","points":0},"Felix Suneson":{"home":1,"away":2,"sign":2,"points":0},"Martin Haupt Højer":{"home":1,"away":2,"sign":2,"points":0},"Sarah Ferguen":{"home":1,"away":0,"sign":1,"points":0},"Nicolai Trier":{"home":1,"away":2,"sign":2,"points":0},"Jakob Skov":{"home":0,"away":2,"sign":2,"points":0},"Jonas Andersen":{"home":0,"away":2,"sign":2,"points":0},"Nadia Laas":{"home":1,"away":0,"sign":1,"points":0},"Lasse Kjellerup":{"home":1,"away":2,"sign":2,"points":0},"Simon Baudtler":{"home":1,"away":1,"sign":2,"points":0},"Patrick Klarlund":{"home":1,"away":3,"sign":2,"points":0},"Esben Dickenson":{"home":1,"away":1,"sign":"x","points":0},"Rasmus Aabenhuus":{"home":1,"away":1,"sign":"x","points":0},"Michael Weirsøe":{"home":1,"away":2,"sign":2,"points":0},"Morten Jespersen":{"home":1,"away":2,"sign":2,"points":0},"Lars Navntoft":{"home":0,"away":2,"sign":2,"points":0}}},{"round":"Round 2","group":"H","home":"Spanien","away":"Saudi Arabien","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":3,"away":0,"sign":1,"points":0},"Frederik Franck":{"home":3,"away":0,"sign":1,"points":0},"Martin Thomsen":{"home":3,"away":1,"sign":1,"points":0},"Sigrid Pepke":{"home":3,"away":0,"sign":1,"points":0},"Felix Suneson":{"home":5,"away":0,"sign":1,"points":0},"Martin Haupt Højer":{"home":3,"away":0,"sign":1,"points":0},"Sarah Ferguen":{"home":4,"away":0,"sign":1,"points":0},"Nicolai Trier":{"home":3,"away":0,"sign":1,"points":0},"Jakob Skov":{"home":4,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":2,"away":0,"sign":1,"points":0},"Nadia Laas":{"home":2,"away":0,"sign":1,"points":0},"Lasse Kjellerup":{"home":3,"away":0,"sign":1,"points":0},"Simon Baudtler":{"home":3,"away":0,"sign":1,"points":0},"Patrick Klarlund":{"home":4,"away":1,"sign":1,"points":0},"Esben Dickenson":{"home":3,"away":0,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":4,"away":0,"sign":1,"points":0},"Michael Weirsøe":{"home":3,"away":0,"sign":1,"points":0},"Morten Jespersen":{"home":2,"away":0,"sign":1,"points":0},"Lars Navntoft":{"home":4,"away":0,"sign":1,"points":0}}},{"round":"Round 2","group":"G","home":"Belgien","away":"Iran","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":2,"away":1,"sign":1,"points":0},"Frederik Franck":{"home":2,"away":2,"sign":"X","points":0},"Martin Thomsen":{"home":4,"away":0,"sign":1,"points":0},"Sigrid Pepke":{"home":1,"away":0,"sign":1,"points":0},"Felix Suneson":{"home":3,"away":0,"sign":1,"points":0},"Martin Haupt Højer":{"home":4,"away":1,"sign":1,"points":0},"Sarah Ferguen":{"home":4,"away":0,"sign":1,"points":0},"Nicolai Trier":{"home":2,"away":0,"sign":1,"points":0},"Jakob Skov":{"home":2,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":1,"away":1,"sign":1,"points":0},"Nadia Laas":{"home":3,"away":1,"sign":1,"points":0},"Lasse Kjellerup":{"home":2,"away":0,"sign":1,"points":0},"Simon Baudtler":{"home":2,"away":0,"sign":1,"points":0},"Patrick Klarlund":{"home":2,"away":1,"sign":1,"points":0},"Esben Dickenson":{"home":3,"away":1,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":2,"away":1,"sign":1,"points":0},"Michael Weirsøe":{"home":1,"away":0,"sign":1,"points":0},"Morten Jespersen":{"home":3,"away":1,"sign":1,"points":0},"Lars Navntoft":{"home":2,"away":0,"sign":1,"points":0}}},{"round":"Round 2","group":"H","home":"Uruguay","away":"Kap Verde","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":3,"away":1,"sign":1,"points":0},"Frederik Franck":{"home":2,"away":0,"sign":1,"points":0},"Martin Thomsen":{"home":3,"away":0,"sign":1,"points":0},"Sigrid Pepke":{"home":2,"away":1,"sign":1,"points":0},"Felix Suneson":{"home":5,"away":0,"sign":1,"points":0},"Martin Haupt Højer":{"home":2,"away":0,"sign":1,"points":0},"Sarah Ferguen":{"home":3,"away":0,"sign":1,"points":0},"Nicolai Trier":{"home":2,"away":0,"sign":1,"points":0},"Jakob Skov":{"home":2,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":3,"away":1,"sign":1,"points":0},"Nadia Laas":{"home":2,"away":1,"sign":1,"points":0},"Lasse Kjellerup":{"home":3,"away":0,"sign":1,"points":0},"Simon Baudtler":{"home":3,"away":0,"sign":1,"points":0},"Patrick Klarlund":{"home":3,"away":0,"sign":1,"points":0},"Esben Dickenson":{"home":3,"away":0,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":2,"away":0,"sign":1,"points":0},"Michael Weirsøe":{"home":2,"away":1,"sign":1,"points":0},"Morten Jespersen":{"home":2,"away":0,"sign":1,"points":0},"Lars Navntoft":{"home":3,"away":0,"sign":1,"points":0}}},{"round":"Round 2","group":"G","home":"New Zealand","away":"Egypten","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":1,"away":2,"sign":2,"points":0},"Frederik Franck":{"home":0,"away":2,"sign":2,"points":0},"Martin Thomsen":{"home":2,"away":2,"sign":2,"points":0},"Sigrid Pepke":{"home":1,"away":2,"sign":2,"points":0},"Felix Suneson":{"home":0,"away":1,"sign":2,"points":0},"Martin Haupt Højer":{"home":1,"away":3,"sign":2,"points":0},"Sarah Ferguen":{"home":0,"away":1,"sign":2,"points":0},"Nicolai Trier":{"home":0,"away":1,"sign":"x","points":0},"Jakob Skov":{"home":1,"away":2,"sign":2,"points":0},"Jonas Andersen":{"home":0,"away":1,"sign":2,"points":0},"Nadia Laas":{"home":2,"away":2,"sign":"x","points":0},"Lasse Kjellerup":{"home":1,"away":2,"sign":2,"points":0},"Simon Baudtler":{"home":0,"away":0,"sign":1,"points":0},"Patrick Klarlund":{"home":0,"away":3,"sign":2,"points":0},"Esben Dickenson":{"home":2,"away":2,"sign":"x","points":0},"Rasmus Aabenhuus":{"home":1,"away":1,"sign":"x","points":0},"Michael Weirsøe":{"home":0,"away":1,"sign":2,"points":0},"Morten Jespersen":{"home":0,"away":2,"sign":2,"points":0},"Lars Navntoft":{"home":1,"away":1,"sign":"x","points":0}}},{"round":"Round 2","group":"J","home":"Argentina","away":"Østrig","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":2,"away":1,"sign":1,"points":0},"Frederik Franck":{"home":3,"away":1,"sign":1,"points":0},"Martin Thomsen":{"home":3,"away":1,"sign":1,"points":0},"Sigrid Pepke":{"home":2,"away":2,"sign":"x","points":0},"Felix Suneson":{"home":4,"away":2,"sign":1,"points":0},"Martin Haupt Højer":{"home":1,"away":0,"sign":1,"points":0},"Sarah Ferguen":{"home":3,"away":1,"sign":1,"points":0},"Nicolai Trier":{"home":2,"away":1,"sign":1,"points":0},"Jakob Skov":{"home":2,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":2,"away":1,"sign":1,"points":0},"Nadia Laas":{"home":2,"away":1,"sign":1,"points":0},"Lasse Kjellerup":{"home":2,"away":1,"sign":1,"points":0},"Simon Baudtler":{"home":2,"away":0,"sign":"x","points":0},"Patrick Klarlund":{"home":3,"away":1,"sign":1,"points":0},"Esben Dickenson":{"home":4,"away":0,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":3,"away":1,"sign":1,"points":0},"Michael Weirsøe":{"home":2,"away":0,"sign":1,"points":0},"Morten Jespersen":{"home":2,"away":1,"sign":1,"points":0},"Lars Navntoft":{"home":2,"away":1,"sign":1,"points":0}}},{"round":"Round 2","group":"I","home":"Frankrig","away":"Irak","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":3,"away":0,"sign":1,"points":0},"Frederik Franck":{"home":3,"away":0,"sign":1,"points":0},"Martin Thomsen":{"home":5,"away":0,"sign":1,"points":0},"Sigrid Pepke":{"home":2,"away":0,"sign":1,"points":0},"Felix Suneson":{"home":4,"away":0,"sign":1,"points":0},"Martin Haupt Højer":{"home":3,"away":0,"sign":1,"points":0},"Sarah Ferguen":{"home":5,"away":1,"sign":1,"points":0},"Nicolai Trier":{"home":2,"away":0,"sign":1,"points":0},"Jakob Skov":{"home":4,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":4,"away":0,"sign":1,"points":0},"Nadia Laas":{"home":4,"away":0,"sign":1,"points":0},"Lasse Kjellerup":{"home":3,"away":0,"sign":1,"points":0},"Simon Baudtler":{"home":3,"away":0,"sign":1,"points":0},"Patrick Klarlund":{"home":4,"away":0,"sign":1,"points":0},"Esben Dickenson":{"home":2,"away":0,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":3,"away":0,"sign":1,"points":0},"Michael Weirsøe":{"home":5,"away":0,"sign":1,"points":0},"Morten Jespersen":{"home":4,"away":0,"sign":1,"points":0},"Lars Navntoft":{"home":4,"away":0,"sign":1,"points":0}}},{"round":"Round 2","group":"I","home":"Norge","away":"Senegal","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":2,"away":1,"sign":1,"points":0},"Frederik Franck":{"home":2,"away":2,"sign":"X","points":0},"Martin Thomsen":{"home":1,"away":1,"sign":1,"points":0},"Sigrid Pepke":{"home":1,"away":2,"sign":2,"points":0},"Felix Suneson":{"home":1,"away":0,"sign":1,"points":0},"Martin Haupt Højer":{"home":4,"away":2,"sign":1,"points":0},"Sarah Ferguen":{"home":1,"away":2,"sign":2,"points":0},"Nicolai Trier":{"home":1,"away":1,"sign":"x","points":0},"Jakob Skov":{"home":3,"away":1,"sign":1,"points":0},"Jonas Andersen":{"home":2,"away":1,"sign":"X","points":0},"Nadia Laas":{"home":1,"away":0,"sign":1,"points":0},"Lasse Kjellerup":{"home":1,"away":1,"sign":"X","points":0},"Simon Baudtler":{"home":2,"away":1,"sign":"x","points":0},"Patrick Klarlund":{"home":3,"away":2,"sign":1,"points":0},"Esben Dickenson":{"home":3,"away":1,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":2,"away":1,"sign":1,"points":0},"Michael Weirsøe":{"home":1,"away":1,"sign":"x","points":0},"Morten Jespersen":{"home":1,"away":1,"sign":"x","points":0},"Lars Navntoft":{"home":3,"away":1,"sign":1,"points":0}}},{"round":"Round 2","group":"J","home":"Jordan","away":"Algeriet","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":0,"away":2,"sign":2,"points":0},"Frederik Franck":{"home":1,"away":2,"sign":2,"points":0},"Martin Thomsen":{"home":0,"away":1,"sign":"x","points":0},"Sigrid Pepke":{"home":1,"away":1,"sign":"x","points":0},"Felix Suneson":{"home":0,"away":2,"sign":2,"points":0},"Martin Haupt Højer":{"home":1,"away":2,"sign":2,"points":0},"Sarah Ferguen":{"home":0,"away":2,"sign":2,"points":0},"Nicolai Trier":{"home":0,"away":2,"sign":2,"points":0},"Jakob Skov":{"home":0,"away":1,"sign":2,"points":0},"Jonas Andersen":{"home":1,"away":1,"sign":"X","points":0},"Nadia Laas":{"home":0,"away":2,"sign":2,"points":0},"Lasse Kjellerup":{"home":1,"away":2,"sign":2,"points":0},"Simon Baudtler":{"home":0,"away":3,"sign":2,"points":0},"Patrick Klarlund":{"home":1,"away":3,"sign":2,"points":0},"Esben Dickenson":{"home":1,"away":1,"sign":"x","points":0},"Rasmus Aabenhuus":{"home":0,"away":2,"sign":2,"points":0},"Michael Weirsøe":{"home":0,"away":0,"sign":2,"points":0},"Morten Jespersen":{"home":0,"away":2,"sign":2,"points":0},"Lars Navntoft":{"home":2,"away":2,"sign":"x","points":0}}},{"round":"Round 2","group":"K","home":"Portugal","away":"Uzbekistan","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":3,"away":0,"sign":1,"points":0},"Frederik Franck":{"home":3,"away":1,"sign":1,"points":0},"Martin Thomsen":{"home":3,"away":1,"sign":1,"points":0},"Sigrid Pepke":{"home":2,"away":0,"sign":1,"points":0},"Felix Suneson":{"home":5,"away":0,"sign":1,"points":0},"Martin Haupt Højer":{"home":3,"away":0,"sign":1,"points":0},"Sarah Ferguen":{"home":4,"away":0,"sign":1,"points":0},"Nicolai Trier":{"home":2,"away":0,"sign":1,"points":0},"Jakob Skov":{"home":2,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":3,"away":0,"sign":1,"points":0},"Nadia Laas":{"home":3,"away":1,"sign":1,"points":0},"Lasse Kjellerup":{"home":3,"away":0,"sign":1,"points":0},"Simon Baudtler":{"home":3,"away":0,"sign":1,"points":0},"Patrick Klarlund":{"home":2,"away":0,"sign":1,"points":0},"Esben Dickenson":{"home":2,"away":0,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":3,"away":0,"sign":1,"points":0},"Michael Weirsøe":{"home":3,"away":0,"sign":1,"points":0},"Morten Jespersen":{"home":3,"away":0,"sign":1,"points":0},"Lars Navntoft":{"home":3,"away":0,"sign":1,"points":0}}},{"round":"Round 2","group":"L","home":"England","away":"Ghana","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":2,"away":0,"sign":1,"points":0},"Frederik Franck":{"home":3,"away":1,"sign":1,"points":0},"Martin Thomsen":{"home":2,"away":1,"sign":1,"points":0},"Sigrid Pepke":{"home":2,"away":1,"sign":1,"points":0},"Felix Suneson":{"home":3,"away":0,"sign":1,"points":0},"Martin Haupt Højer":{"home":2,"away":1,"sign":1,"points":0},"Sarah Ferguen":{"home":2,"away":1,"sign":1,"points":0},"Nicolai Trier":{"home":2,"away":1,"sign":1,"points":0},"Jakob Skov":{"home":2,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":2,"away":1,"sign":1,"points":0},"Nadia Laas":{"home":2,"away":0,"sign":1,"points":0},"Lasse Kjellerup":{"home":2,"away":0,"sign":1,"points":0},"Simon Baudtler":{"home":2,"away":1,"sign":"x","points":0},"Patrick Klarlund":{"home":2,"away":1,"sign":1,"points":0},"Esben Dickenson":{"home":3,"away":0,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":3,"away":0,"sign":1,"points":0},"Michael Weirsøe":{"home":3,"away":0,"sign":1,"points":0},"Morten Jespersen":{"home":2,"away":0,"sign":1,"points":0},"Lars Navntoft":{"home":2,"away":0,"sign":1,"points":0}}},{"round":"Round 2","group":"L","home":"Panama","away":"Kroatien","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":1,"away":2,"sign":2,"points":0},"Frederik Franck":{"home":0,"away":2,"sign":2,"points":0},"Martin Thomsen":{"home":1,"away":4,"sign":2,"points":0},"Sigrid Pepke":{"home":0,"away":0,"sign":"x","points":0},"Felix Suneson":{"home":1,"away":3,"sign":2,"points":0},"Martin Haupt Højer":{"home":0,"away":2,"sign":2,"points":0},"Sarah Ferguen":{"home":0,"away":3,"sign":2,"points":0},"Nicolai Trier":{"home":0,"away":1,"sign":2,"points":0},"Jakob Skov":{"home":0,"away":2,"sign":2,"points":0},"Jonas Andersen":{"home":0,"away":1,"sign":2,"points":0},"Nadia Laas":{"home":1,"away":2,"sign":2,"points":0},"Lasse Kjellerup":{"home":0,"away":3,"sign":2,"points":0},"Simon Baudtler":{"home":0,"away":4,"sign":2,"points":0},"Patrick Klarlund":{"home":0,"away":2,"sign":2,"points":0},"Esben Dickenson":{"home":0,"away":2,"sign":2,"points":0},"Rasmus Aabenhuus":{"home":0,"away":2,"sign":2,"points":0},"Michael Weirsøe":{"home":0,"away":1,"sign":2,"points":0},"Morten Jespersen":{"home":0,"away":3,"sign":2,"points":0},"Lars Navntoft":{"home":0,"away":2,"sign":2,"points":0}}},{"round":"Round 2","group":"K","home":"Colombia","away":"DR Congo","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":2,"away":0,"sign":1,"points":0},"Frederik Franck":{"home":2,"away":0,"sign":1,"points":0},"Martin Thomsen":{"home":3,"away":1,"sign":1,"points":0},"Sigrid Pepke":{"home":1,"away":0,"sign":1,"points":0},"Felix Suneson":{"home":1,"away":0,"sign":1,"points":0},"Martin Haupt Højer":{"home":1,"away":0,"sign":1,"points":0},"Sarah Ferguen":{"home":2,"away":0,"sign":1,"points":0},"Nicolai Trier":{"home":1,"away":1,"sign":1,"points":0},"Jakob Skov":{"home":1,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":2,"away":1,"sign":1,"points":0},"Nadia Laas":{"home":1,"away":0,"sign":1,"points":0},"Lasse Kjellerup":{"home":2,"away":0,"sign":1,"points":0},"Simon Baudtler":{"home":2,"away":0,"sign":"x","points":0},"Patrick Klarlund":{"home":2,"away":1,"sign":1,"points":0},"Esben Dickenson":{"home":1,"away":0,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":1,"away":1,"sign":"x","points":0},"Michael Weirsøe":{"home":2,"away":0,"sign":1,"points":0},"Morten Jespersen":{"home":1,"away":1,"sign":"x","points":0},"Lars Navntoft":{"home":1,"away":1,"sign":"x","points":0}}},{"round":"Round 3","group":"B","home":"Bosnien-Hercegovina","away":"Qatar","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":2,"away":0,"sign":1,"points":0},"Frederik Franck":{"home":1,"away":0,"sign":1,"points":0},"Martin Thomsen":{"home":1,"away":1,"sign":1,"points":0},"Sigrid Pepke":{"home":2,"away":2,"sign":"x","points":0},"Felix Suneson":{"home":3,"away":0,"sign":1,"points":0},"Martin Haupt Højer":{"home":1,"away":0,"sign":1,"points":0},"Sarah Ferguen":{"home":0,"away":0,"sign":"x","points":0},"Nicolai Trier":{"home":1,"away":0,"sign":1,"points":0},"Jakob Skov":{"home":1,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":1,"away":0,"sign":1,"points":0},"Nadia Laas":{"home":2,"away":2,"sign":"x","points":0},"Lasse Kjellerup":{"home":1,"away":0,"sign":1,"points":0},"Simon Baudtler":{"home":1,"away":0,"sign":"x","points":0},"Patrick Klarlund":{"home":1,"away":0,"sign":1,"points":0},"Esben Dickenson":{"home":0,"away":1,"sign":2,"points":0},"Rasmus Aabenhuus":{"home":1,"away":0,"sign":1,"points":0},"Michael Weirsøe":{"home":1,"away":0,"sign":1,"points":0},"Morten Jespersen":{"home":2,"away":0,"sign":1,"points":0},"Lars Navntoft":{"home":0,"away":1,"sign":2,"points":0}}},{"round":"Round 3","group":"B","home":"Schweiz","away":"Canada","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":1,"away":1,"sign":"X","points":0},"Frederik Franck":{"home":0,"away":0,"sign":"X","points":0},"Martin Thomsen":{"home":2,"away":2,"sign":2,"points":0},"Sigrid Pepke":{"home":3,"away":1,"sign":1,"points":0},"Felix Suneson":{"home":2,"away":1,"sign":1,"points":0},"Martin Haupt Højer":{"home":1,"away":0,"sign":1,"points":0},"Sarah Ferguen":{"home":2,"away":0,"sign":1,"points":0},"Nicolai Trier":{"home":2,"away":0,"sign":1,"points":0},"Jakob Skov":{"home":2,"away":2,"sign":"x","points":0},"Jonas Andersen":{"home":1,"away":0,"sign":2,"points":0},"Nadia Laas":{"home":2,"away":1,"sign":1,"points":0},"Lasse Kjellerup":{"home":1,"away":1,"sign":"X","points":0},"Simon Baudtler":{"home":2,"away":0,"sign":1,"points":0},"Patrick Klarlund":{"home":3,"away":1,"sign":1,"points":0},"Esben Dickenson":{"home":2,"away":2,"sign":"x","points":0},"Rasmus Aabenhuus":{"home":2,"away":0,"sign":1,"points":0},"Michael Weirsøe":{"home":2,"away":1,"sign":"x","points":0},"Morten Jespersen":{"home":1,"away":1,"sign":"x","points":0},"Lars Navntoft":{"home":2,"away":1,"sign":1,"points":0}}},{"round":"Round 3","group":"C","home":"Marokko","away":"Haiti","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":3,"away":0,"sign":1,"points":0},"Frederik Franck":{"home":3,"away":0,"sign":1,"points":0},"Martin Thomsen":{"home":2,"away":1,"sign":"x","points":0},"Sigrid Pepke":{"home":3,"away":0,"sign":1,"points":0},"Felix Suneson":{"home":5,"away":0,"sign":1,"points":0},"Martin Haupt Højer":{"home":3,"away":0,"sign":1,"points":0},"Sarah Ferguen":{"home":2,"away":0,"sign":1,"points":0},"Nicolai Trier":{"home":3,"away":1,"sign":1,"points":0},"Jakob Skov":{"home":1,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":3,"away":0,"sign":1,"points":0},"Nadia Laas":{"home":4,"away":0,"sign":1,"points":0},"Lasse Kjellerup":{"home":3,"away":0,"sign":1,"points":0},"Simon Baudtler":{"home":2,"away":1,"sign":1,"points":0},"Patrick Klarlund":{"home":3,"away":0,"sign":1,"points":0},"Esben Dickenson":{"home":1,"away":1,"sign":"x","points":0},"Rasmus Aabenhuus":{"home":2,"away":0,"sign":1,"points":0},"Michael Weirsøe":{"home":2,"away":0,"sign":1,"points":0},"Morten Jespersen":{"home":3,"away":0,"sign":1,"points":0},"Lars Navntoft":{"home":3,"away":0,"sign":1,"points":0}}},{"round":"Round 3","group":"C","home":"Skotland","away":"Brasilien","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":2,"away":2,"sign":2,"points":0},"Frederik Franck":{"home":1,"away":4,"sign":2,"points":0},"Martin Thomsen":{"home":1,"away":3,"sign":2,"points":0},"Sigrid Pepke":{"home":0,"away":2,"sign":2,"points":0},"Felix Suneson":{"home":1,"away":4,"sign":2,"points":0},"Martin Haupt Højer":{"home":1,"away":3,"sign":2,"points":0},"Sarah Ferguen":{"home":1,"away":3,"sign":2,"points":0},"Nicolai Trier":{"home":0,"away":2,"sign":2,"points":0},"Jakob Skov":{"home":0,"away":2,"sign":2,"points":0},"Jonas Andersen":{"home":0,"away":1,"sign":2,"points":0},"Nadia Laas":{"home":1,"away":2,"sign":2,"points":0},"Lasse Kjellerup":{"home":0,"away":3,"sign":2,"points":0},"Simon Baudtler":{"home":1,"away":3,"sign":2,"points":0},"Patrick Klarlund":{"home":1,"away":4,"sign":2,"points":0},"Esben Dickenson":{"home":1,"away":3,"sign":2,"points":0},"Rasmus Aabenhuus":{"home":1,"away":2,"sign":2,"points":0},"Michael Weirsøe":{"home":1,"away":3,"sign":2,"points":0},"Morten Jespersen":{"home":0,"away":2,"sign":2,"points":0},"Lars Navntoft":{"home":0,"away":2,"sign":2,"points":0}}},{"round":"Round 3","group":"A","home":"Sydafrika","away":"Sydkorea","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":0,"away":2,"sign":2,"points":0},"Frederik Franck":{"home":1,"away":2,"sign":2,"points":0},"Martin Thomsen":{"home":1,"away":2,"sign":"x","points":0},"Sigrid Pepke":{"home":0,"away":1,"sign":2,"points":0},"Felix Suneson":{"home":1,"away":3,"sign":2,"points":0},"Martin Haupt Højer":{"home":1,"away":1,"sign":"x","points":0},"Sarah Ferguen":{"home":1,"away":0,"sign":1,"points":0},"Nicolai Trier":{"home":1,"away":1,"sign":"x","points":0},"Jakob Skov":{"home":0,"away":1,"sign":2,"points":0},"Jonas Andersen":{"home":2,"away":2,"sign":" X","points":0},"Nadia Laas":{"home":1,"away":1,"sign":"x","points":0},"Lasse Kjellerup":{"home":1,"away":2,"sign":2,"points":0},"Simon Baudtler":{"home":1,"away":2,"sign":2,"points":0},"Patrick Klarlund":{"home":1,"away":2,"sign":2,"points":0},"Esben Dickenson":{"home":1,"away":1,"sign":"x","points":0},"Rasmus Aabenhuus":{"home":1,"away":2,"sign":2,"points":0},"Michael Weirsøe":{"home":1,"away":2,"sign":2,"points":0},"Morten Jespersen":{"home":0,"away":2,"sign":2,"points":0},"Lars Navntoft":{"home":0,"away":2,"sign":2,"points":0}}},{"round":"Round 3","group":"A","home":"Tjekkiet","away":"Mexico","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":1,"away":2,"sign":2,"points":0},"Frederik Franck":{"home":1,"away":2,"sign":2,"points":0},"Martin Thomsen":{"home":1,"away":2,"sign":"x","points":0},"Sigrid Pepke":{"home":1,"away":1,"sign":"x","points":0},"Felix Suneson":{"home":1,"away":2,"sign":2,"points":0},"Martin Haupt Højer":{"home":0,"away":0,"sign":"x","points":0},"Sarah Ferguen":{"home":2,"away":2,"sign":"x","points":0},"Nicolai Trier":{"home":1,"away":1,"sign":"x","points":0},"Jakob Skov":{"home":0,"away":2,"sign":2,"points":0},"Jonas Andersen":{"home":1,"away":3,"sign":2,"points":0},"Nadia Laas":{"home":1,"away":2,"sign":2,"points":0},"Lasse Kjellerup":{"home":1,"away":2,"sign":2,"points":0},"Simon Baudtler":{"home":2,"away":1,"sign":1,"points":0},"Patrick Klarlund":{"home":1,"away":3,"sign":2,"points":0},"Esben Dickenson":{"home":2,"away":1,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":1,"away":1,"sign":"x","points":0},"Michael Weirsøe":{"home":1,"away":2,"sign":2,"points":0},"Morten Jespersen":{"home":1,"away":2,"sign":2,"points":0},"Lars Navntoft":{"home":1,"away":2,"sign":2,"points":0}}},{"round":"Round 3","group":"E","home":"Curacao","away":"Elfenbenskysten","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":1,"away":3,"sign":2,"points":0},"Frederik Franck":{"home":0,"away":2,"sign":2,"points":0},"Martin Thomsen":{"home":0,"away":2,"sign":2,"points":0},"Sigrid Pepke":{"home":0,"away":2,"sign":2,"points":0},"Felix Suneson":{"home":0,"away":4,"sign":2,"points":0},"Martin Haupt Højer":{"home":0,"away":2,"sign":2,"points":0},"Sarah Ferguen":{"home":0,"away":3,"sign":2,"points":0},"Nicolai Trier":{"home":1,"away":2,"sign":2,"points":0},"Jakob Skov":{"home":0,"away":2,"sign":2,"points":0},"Jonas Andersen":{"home":0,"away":2,"sign":2,"points":0},"Nadia Laas":{"home":1,"away":5,"sign":2,"points":0},"Lasse Kjellerup":{"home":0,"away":2,"sign":2,"points":0},"Simon Baudtler":{"home":0,"away":3,"sign":2,"points":0},"Patrick Klarlund":{"home":0,"away":2,"sign":2,"points":0},"Esben Dickenson":{"home":1,"away":1,"sign":"x","points":0},"Rasmus Aabenhuus":{"home":0,"away":2,"sign":2,"points":0},"Michael Weirsøe":{"home":0,"away":1,"sign":2,"points":0},"Morten Jespersen":{"home":0,"away":4,"sign":2,"points":0},"Lars Navntoft":{"home":0,"away":2,"sign":2,"points":0}}},{"round":"Round 3","group":"E","home":"Ecuador","away":"Tyskland","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":1,"away":3,"sign":2,"points":0},"Frederik Franck":{"home":2,"away":4,"sign":2,"points":0},"Martin Thomsen":{"home":0,"away":3,"sign":2,"points":0},"Sigrid Pepke":{"home":1,"away":3,"sign":2,"points":0},"Felix Suneson":{"home":1,"away":3,"sign":2,"points":0},"Martin Haupt Højer":{"home":0,"away":1,"sign":2,"points":0},"Sarah Ferguen":{"home":2,"away":3,"sign":2,"points":0},"Nicolai Trier":{"home":0,"away":2,"sign":2,"points":0},"Jakob Skov":{"home":0,"away":2,"sign":2,"points":0},"Jonas Andersen":{"home":0,"away":1,"sign":2,"points":0},"Nadia Laas":{"home":2,"away":4,"sign":2,"points":0},"Lasse Kjellerup":{"home":1,"away":2,"sign":2,"points":0},"Simon Baudtler":{"home":0,"away":5,"sign":2,"points":0},"Patrick Klarlund":{"home":0,"away":5,"sign":2,"points":0},"Esben Dickenson":{"home":0,"away":3,"sign":2,"points":0},"Rasmus Aabenhuus":{"home":0,"away":2,"sign":2,"points":0},"Michael Weirsøe":{"home":1,"away":3,"sign":2,"points":0},"Morten Jespersen":{"home":1,"away":2,"sign":2,"points":0},"Lars Navntoft":{"home":0,"away":3,"sign":2,"points":0}}},{"round":"Round 3","group":"F","home":"Japan","away":"Sverige","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":1,"away":1,"sign":"X","points":0},"Frederik Franck":{"home":2,"away":1,"sign":1,"points":0},"Martin Thomsen":{"home":1,"away":1,"sign":2,"points":0},"Sigrid Pepke":{"home":1,"away":0,"sign":1,"points":0},"Felix Suneson":{"home":1,"away":1,"sign":"x","points":0},"Martin Haupt Højer":{"home":2,"away":1,"sign":1,"points":0},"Sarah Ferguen":{"home":1,"away":2,"sign":2,"points":0},"Nicolai Trier":{"home":1,"away":0,"sign":1,"points":0},"Jakob Skov":{"home":1,"away":1,"sign":"x","points":0},"Jonas Andersen":{"home":1,"away":0,"sign":1,"points":0},"Nadia Laas":{"home":1,"away":2,"sign":2,"points":0},"Lasse Kjellerup":{"home":1,"away":1,"sign":"X","points":0},"Simon Baudtler":{"home":1,"away":1,"sign":1,"points":0},"Patrick Klarlund":{"home":2,"away":2,"sign":"x","points":0},"Esben Dickenson":{"home":2,"away":0,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":1,"away":1,"sign":"x","points":0},"Michael Weirsøe":{"home":2,"away":0,"sign":1,"points":0},"Morten Jespersen":{"home":1,"away":1,"sign":"x","points":0},"Lars Navntoft":{"home":1,"away":1,"sign":"x","points":0}}},{"round":"Round 3","group":"F","home":"Tunesien","away":"Holland","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":0,"away":2,"sign":2,"points":0},"Frederik Franck":{"home":1,"away":3,"sign":2,"points":0},"Martin Thomsen":{"home":0,"away":4,"sign":2,"points":0},"Sigrid Pepke":{"home":0,"away":2,"sign":2,"points":0},"Felix Suneson":{"home":0,"away":3,"sign":2,"points":0},"Martin Haupt Højer":{"home":1,"away":2,"sign":2,"points":0},"Sarah Ferguen":{"home":2,"away":3,"sign":2,"points":0},"Nicolai Trier":{"home":1,"away":1,"sign":2,"points":0},"Jakob Skov":{"home":0,"away":2,"sign":2,"points":0},"Jonas Andersen":{"home":0,"away":1,"sign":2,"points":0},"Nadia Laas":{"home":2,"away":2,"sign":"x","points":0},"Lasse Kjellerup":{"home":0,"away":2,"sign":2,"points":0},"Simon Baudtler":{"home":0,"away":2,"sign":2,"points":0},"Patrick Klarlund":{"home":1,"away":3,"sign":2,"points":0},"Esben Dickenson":{"home":0,"away":2,"sign":2,"points":0},"Rasmus Aabenhuus":{"home":1,"away":2,"sign":2,"points":0},"Michael Weirsøe":{"home":0,"away":2,"sign":2,"points":0},"Morten Jespersen":{"home":0,"away":3,"sign":2,"points":0},"Lars Navntoft":{"home":0,"away":2,"sign":2,"points":0}}},{"round":"Round 3","group":"D","home":"Paraguay","away":"Australien","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":1,"away":1,"sign":"X","points":0},"Frederik Franck":{"home":1,"away":1,"sign":"X","points":0},"Martin Thomsen":{"home":1,"away":2,"sign":2,"points":0},"Sigrid Pepke":{"home":0,"away":0,"sign":"x","points":0},"Felix Suneson":{"home":1,"away":0,"sign":1,"points":0},"Martin Haupt Højer":{"home":1,"away":0,"sign":1,"points":0},"Sarah Ferguen":{"home":3,"away":3,"sign":"x","points":0},"Nicolai Trier":{"home":1,"away":0,"sign":1,"points":0},"Jakob Skov":{"home":1,"away":1,"sign":"x","points":0},"Jonas Andersen":{"home":1,"away":0,"sign":"X","points":0},"Nadia Laas":{"home":2,"away":1,"sign":2,"points":0},"Lasse Kjellerup":{"home":1,"away":1,"sign":"X","points":0},"Simon Baudtler":{"home":1,"away":2,"sign":"x","points":0},"Patrick Klarlund":{"home":1,"away":1,"sign":"x","points":0},"Esben Dickenson":{"home":0,"away":2,"sign":2,"points":0},"Rasmus Aabenhuus":{"home":1,"away":1,"sign":"x","points":0},"Michael Weirsøe":{"home":0,"away":0,"sign":"x","points":0},"Morten Jespersen":{"home":1,"away":2,"sign":2,"points":0},"Lars Navntoft":{"home":2,"away":2,"sign":"x","points":0}}},{"round":"Round 3","group":"D","home":"Tyrkiet","away":"USA","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":2,"away":2,"sign":"X","points":0},"Frederik Franck":{"home":2,"away":0,"sign":1,"points":0},"Martin Thomsen":{"home":1,"away":3,"sign":2,"points":0},"Sigrid Pepke":{"home":1,"away":1,"sign":"x","points":0},"Felix Suneson":{"home":1,"away":1,"sign":"x","points":0},"Martin Haupt Højer":{"home":3,"away":1,"sign":1,"points":0},"Sarah Ferguen":{"home":0,"away":1,"sign":2,"points":0},"Nicolai Trier":{"home":1,"away":1,"sign":1,"points":0},"Jakob Skov":{"home":1,"away":1,"sign":"x","points":0},"Jonas Andersen":{"home":2,"away":1,"sign":"X","points":0},"Nadia Laas":{"home":2,"away":3,"sign":2,"points":0},"Lasse Kjellerup":{"home":0,"away":1,"sign":2,"points":0},"Simon Baudtler":{"home":2,"away":1,"sign":"x","points":0},"Patrick Klarlund":{"home":2,"away":2,"sign":"x","points":0},"Esben Dickenson":{"home":1,"away":1,"sign":"x","points":0},"Rasmus Aabenhuus":{"home":2,"away":0,"sign":1,"points":0},"Michael Weirsøe":{"home":2,"away":2,"sign":"x","points":0},"Morten Jespersen":{"home":2,"away":2,"sign":"x","points":0},"Lars Navntoft":{"home":2,"away":2,"sign":"x","points":0}}},{"round":"Round 3","group":"I","home":"Norge","away":"Frankrig","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":1,"away":3,"sign":2,"points":0},"Frederik Franck":{"home":3,"away":1,"sign":1,"points":0},"Martin Thomsen":{"home":1,"away":2,"sign":"x","points":0},"Sigrid Pepke":{"home":1,"away":2,"sign":2,"points":0},"Felix Suneson":{"home":1,"away":2,"sign":2,"points":0},"Martin Haupt Højer":{"home":2,"away":3,"sign":2,"points":0},"Sarah Ferguen":{"home":0,"away":3,"sign":2,"points":0},"Nicolai Trier":{"home":1,"away":2,"sign":2,"points":0},"Jakob Skov":{"home":2,"away":3,"sign":2,"points":0},"Jonas Andersen":{"home":1,"away":2,"sign":"X","points":0},"Nadia Laas":{"home":1,"away":1,"sign":"x","points":0},"Lasse Kjellerup":{"home":1,"away":2,"sign":2,"points":0},"Simon Baudtler":{"home":2,"away":4,"sign":"x","points":0},"Patrick Klarlund":{"home":2,"away":2,"sign":"x","points":0},"Esben Dickenson":{"home":2,"away":3,"sign":2,"points":0},"Rasmus Aabenhuus":{"home":1,"away":2,"sign":2,"points":0},"Michael Weirsøe":{"home":1,"away":2,"sign":2,"points":0},"Morten Jespersen":{"home":0,"away":2,"sign":2,"points":0},"Lars Navntoft":{"home":2,"away":3,"sign":2,"points":0}}},{"round":"Round 3","group":"I","home":"Senegal","away":"Irak","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":2,"away":1,"sign":1,"points":0},"Frederik Franck":{"home":2,"away":0,"sign":1,"points":0},"Martin Thomsen":{"home":2,"away":1,"sign":"x","points":0},"Sigrid Pepke":{"home":3,"away":0,"sign":1,"points":0},"Felix Suneson":{"home":3,"away":0,"sign":1,"points":0},"Martin Haupt Højer":{"home":3,"away":0,"sign":1,"points":0},"Sarah Ferguen":{"home":2,"away":0,"sign":1,"points":0},"Nicolai Trier":{"home":1,"away":0,"sign":1,"points":0},"Jakob Skov":{"home":1,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":2,"away":0,"sign":1,"points":0},"Nadia Laas":{"home":3,"away":0,"sign":1,"points":0},"Lasse Kjellerup":{"home":2,"away":0,"sign":1,"points":0},"Simon Baudtler":{"home":2,"away":0,"sign":1,"points":0},"Patrick Klarlund":{"home":1,"away":0,"sign":1,"points":0},"Esben Dickenson":{"home":2,"away":1,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":1,"away":0,"sign":1,"points":0},"Michael Weirsøe":{"home":3,"away":0,"sign":1,"points":0},"Morten Jespersen":{"home":2,"away":0,"sign":1,"points":0},"Lars Navntoft":{"home":3,"away":1,"sign":1,"points":0}}},{"round":"Round 3","group":"H","home":"Kap Verde","away":"Saudi Arabien","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":1,"away":2,"sign":2,"points":0},"Frederik Franck":{"home":0,"away":2,"sign":2,"points":0},"Martin Thomsen":{"home":0,"away":1,"sign":1,"points":0},"Sigrid Pepke":{"home":2,"away":2,"sign":"x","points":0},"Felix Suneson":{"home":1,"away":2,"sign":2,"points":0},"Martin Haupt Højer":{"home":0,"away":1,"sign":2,"points":0},"Sarah Ferguen":{"home":0,"away":2,"sign":2,"points":0},"Nicolai Trier":{"home":1,"away":1,"sign":"x","points":0},"Jakob Skov":{"home":1,"away":1,"sign":"x","points":0},"Jonas Andersen":{"home":1,"away":1,"sign":"X","points":0},"Nadia Laas":{"home":1,"away":1,"sign":"x","points":0},"Lasse Kjellerup":{"home":1,"away":1,"sign":"X","points":0},"Simon Baudtler":{"home":2,"away":2,"sign":1,"points":0},"Patrick Klarlund":{"home":0,"away":2,"sign":2,"points":0},"Esben Dickenson":{"home":1,"away":1,"sign":"x","points":0},"Rasmus Aabenhuus":{"home":1,"away":1,"sign":"x","points":0},"Michael Weirsøe":{"home":0,"away":1,"sign":2,"points":0},"Morten Jespersen":{"home":1,"away":1,"sign":"x","points":0},"Lars Navntoft":{"home":0,"away":1,"sign":2,"points":0}}},{"round":"Round 3","group":"H","home":"Uruguay","away":"Spanien","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":1,"away":2,"sign":2,"points":0},"Frederik Franck":{"home":2,"away":2,"sign":"X","points":0},"Martin Thomsen":{"home":1,"away":2,"sign":2,"points":0},"Sigrid Pepke":{"home":2,"away":3,"sign":2,"points":0},"Felix Suneson":{"home":1,"away":2,"sign":2,"points":0},"Martin Haupt Højer":{"home":1,"away":1,"sign":"x","points":0},"Sarah Ferguen":{"home":2,"away":3,"sign":2,"points":0},"Nicolai Trier":{"home":1,"away":2,"sign":2,"points":0},"Jakob Skov":{"home":0,"away":2,"sign":2,"points":0},"Jonas Andersen":{"home":1,"away":3,"sign":"X","points":0},"Nadia Laas":{"home":2,"away":3,"sign":2,"points":0},"Lasse Kjellerup":{"home":1,"away":2,"sign":2,"points":0},"Simon Baudtler":{"home":1,"away":3,"sign":2,"points":0},"Patrick Klarlund":{"home":1,"away":4,"sign":2,"points":0},"Esben Dickenson":{"home":2,"away":2,"sign":"x","points":0},"Rasmus Aabenhuus":{"home":0,"away":2,"sign":2,"points":0},"Michael Weirsøe":{"home":1,"away":3,"sign":2,"points":0},"Morten Jespersen":{"home":1,"away":2,"sign":2,"points":0},"Lars Navntoft":{"home":0,"away":2,"sign":2,"points":0}}},{"round":"Round 3","group":"G","home":"Egypten","away":"Iran","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":1,"away":1,"sign":"X","points":0},"Frederik Franck":{"home":1,"away":1,"sign":"X","points":0},"Martin Thomsen":{"home":3,"away":0,"sign":1,"points":0},"Sigrid Pepke":{"home":1,"away":1,"sign":"x","points":0},"Felix Suneson":{"home":1,"away":1,"sign":"x","points":0},"Martin Haupt Højer":{"home":2,"away":1,"sign":1,"points":0},"Sarah Ferguen":{"home":2,"away":1,"sign":1,"points":0},"Nicolai Trier":{"home":1,"away":1,"sign":"x","points":0},"Jakob Skov":{"home":2,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":0,"away":0,"sign":"X","points":0},"Nadia Laas":{"home":2,"away":1,"sign":1,"points":0},"Lasse Kjellerup":{"home":1,"away":1,"sign":"X","points":0},"Simon Baudtler":{"home":1,"away":1,"sign":1,"points":0},"Patrick Klarlund":{"home":1,"away":1,"sign":"x","points":0},"Esben Dickenson":{"home":1,"away":1,"sign":"x","points":0},"Rasmus Aabenhuus":{"home":2,"away":1,"sign":1,"points":0},"Michael Weirsøe":{"home":1,"away":0,"sign":1,"points":0},"Morten Jespersen":{"home":1,"away":1,"sign":"x","points":0},"Lars Navntoft":{"home":0,"away":0,"sign":"x","points":0}}},{"round":"Round 3","group":"G","home":"New Zealand","away":"Belgien","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":0,"away":2,"sign":2,"points":0},"Frederik Franck":{"home":0,"away":3,"sign":2,"points":0},"Martin Thomsen":{"home":1,"away":3,"sign":2,"points":0},"Sigrid Pepke":{"home":0,"away":2,"sign":2,"points":0},"Felix Suneson":{"home":0,"away":3,"sign":2,"points":0},"Martin Haupt Højer":{"home":0,"away":2,"sign":2,"points":0},"Sarah Ferguen":{"home":1,"away":3,"sign":2,"points":0},"Nicolai Trier":{"home":0,"away":2,"sign":2,"points":0},"Jakob Skov":{"home":0,"away":2,"sign":2,"points":0},"Jonas Andersen":{"home":0,"away":1,"sign":2,"points":0},"Nadia Laas":{"home":0,"away":3,"sign":2,"points":0},"Lasse Kjellerup":{"home":0,"away":3,"sign":2,"points":0},"Simon Baudtler":{"home":0,"away":3,"sign":2,"points":0},"Patrick Klarlund":{"home":0,"away":2,"sign":2,"points":0},"Esben Dickenson":{"home":0,"away":2,"sign":2,"points":0},"Rasmus Aabenhuus":{"home":0,"away":2,"sign":2,"points":0},"Michael Weirsøe":{"home":0,"away":2,"sign":2,"points":0},"Morten Jespersen":{"home":0,"away":4,"sign":2,"points":0},"Lars Navntoft":{"home":0,"away":2,"sign":2,"points":0}}},{"round":"Round 3","group":"L","home":"Kroatien","away":"Ghana","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":2,"away":0,"sign":1,"points":0},"Frederik Franck":{"home":1,"away":0,"sign":1,"points":0},"Martin Thomsen":{"home":2,"away":0,"sign":1,"points":0},"Sigrid Pepke":{"home":3,"away":0,"sign":1,"points":0},"Felix Suneson":{"home":2,"away":0,"sign":1,"points":0},"Martin Haupt Højer":{"home":1,"away":1,"sign":"x","points":0},"Sarah Ferguen":{"home":3,"away":1,"sign":1,"points":0},"Nicolai Trier":{"home":1,"away":1,"sign":"x","points":0},"Jakob Skov":{"home":2,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":2,"away":1,"sign":"X","points":0},"Nadia Laas":{"home":2,"away":0,"sign":1,"points":0},"Lasse Kjellerup":{"home":2,"away":1,"sign":1,"points":0},"Simon Baudtler":{"home":1,"away":0,"sign":1,"points":0},"Patrick Klarlund":{"home":2,"away":0,"sign":1,"points":0},"Esben Dickenson":{"home":2,"away":0,"sign":1,"points":0},"Rasmus Aabenhuus":{"home":1,"away":1,"sign":"x","points":0},"Michael Weirsøe":{"home":1,"away":0,"sign":1,"points":0},"Morten Jespersen":{"home":2,"away":1,"sign":1,"points":0},"Lars Navntoft":{"home":0,"away":0,"sign":"x","points":0}}},{"round":"Round 3","group":"L","home":"Panama","away":"England","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":0,"away":3,"sign":2,"points":0},"Frederik Franck":{"home":0,"away":4,"sign":2,"points":0},"Martin Thomsen":{"home":1,"away":2,"sign":2,"points":0},"Sigrid Pepke":{"home":0,"away":1,"sign":2,"points":0},"Felix Suneson":{"home":1,"away":3,"sign":2,"points":0},"Martin Haupt Højer":{"home":0,"away":1,"sign":2,"points":0},"Sarah Ferguen":{"home":0,"away":2,"sign":2,"points":0},"Nicolai Trier":{"home":0,"away":2,"sign":2,"points":0},"Jakob Skov":{"home":1,"away":2,"sign":2,"points":0},"Jonas Andersen":{"home":0,"away":2,"sign":2,"points":0},"Nadia Laas":{"home":0,"away":2,"sign":2,"points":0},"Lasse Kjellerup":{"home":0,"away":4,"sign":2,"points":0},"Simon Baudtler":{"home":0,"away":3,"sign":2,"points":0},"Patrick Klarlund":{"home":0,"away":3,"sign":2,"points":0},"Esben Dickenson":{"home":0,"away":2,"sign":2,"points":0},"Rasmus Aabenhuus":{"home":0,"away":3,"sign":2,"points":0},"Michael Weirsøe":{"home":2,"away":1,"sign":1,"points":0},"Morten Jespersen":{"home":0,"away":4,"sign":2,"points":0},"Lars Navntoft":{"home":0,"away":3,"sign":2,"points":0}}},{"round":"Round 3","group":"K","home":"Colombia","away":"Portugal","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":1,"away":1,"sign":"X","points":0},"Frederik Franck":{"home":2,"away":3,"sign":2,"points":0},"Martin Thomsen":{"home":2,"away":2,"sign":2,"points":0},"Sigrid Pepke":{"home":0,"away":0,"sign":"x","points":0},"Felix Suneson":{"home":2,"away":3,"sign":2,"points":0},"Martin Haupt Højer":{"home":1,"away":1,"sign":"x","points":0},"Sarah Ferguen":{"home":2,"away":2,"sign":"x","points":0},"Nicolai Trier":{"home":1,"away":2,"sign":2,"points":0},"Jakob Skov":{"home":2,"away":2,"sign":"x","points":0},"Jonas Andersen":{"home":1,"away":3,"sign":2,"points":0},"Nadia Laas":{"home":2,"away":1,"sign":2,"points":0},"Lasse Kjellerup":{"home":1,"away":2,"sign":2,"points":0},"Simon Baudtler":{"home":1,"away":2,"sign":2,"points":0},"Patrick Klarlund":{"home":1,"away":2,"sign":2,"points":0},"Esben Dickenson":{"home":2,"away":2,"sign":"x","points":0},"Rasmus Aabenhuus":{"home":1,"away":2,"sign":2,"points":0},"Michael Weirsøe":{"home":2,"away":3,"sign":2,"points":0},"Morten Jespersen":{"home":1,"away":2,"sign":2,"points":0},"Lars Navntoft":{"home":1,"away":3,"sign":2,"points":0}}},{"round":"Round 3","group":"K","home":"DR Congo","away":"Uzbekistan","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":1,"away":0,"sign":1,"points":0},"Frederik Franck":{"home":1,"away":0,"sign":1,"points":0},"Martin Thomsen":{"home":1,"away":0,"sign":"x","points":0},"Sigrid Pepke":{"home":2,"away":2,"sign":"x","points":0},"Felix Suneson":{"home":1,"away":0,"sign":1,"points":0},"Martin Haupt Højer":{"home":0,"away":0,"sign":"x","points":0},"Sarah Ferguen":{"home":1,"away":0,"sign":1,"points":0},"Nicolai Trier":{"home":1,"away":1,"sign":"x","points":0},"Jakob Skov":{"home":1,"away":0,"sign":1,"points":0},"Jonas Andersen":{"home":2,"away":0,"sign":1,"points":0},"Nadia Laas":{"home":2,"away":2,"sign":"x","points":0},"Lasse Kjellerup":{"home":1,"away":1,"sign":"X","points":0},"Simon Baudtler":{"home":0,"away":0,"sign":"x","points":0},"Patrick Klarlund":{"home":2,"away":2,"sign":"x","points":0},"Esben Dickenson":{"home":0,"away":0,"sign":"x","points":0},"Rasmus Aabenhuus":{"home":2,"away":0,"sign":1,"points":0},"Michael Weirsøe":{"home":1,"away":0,"sign":1,"points":0},"Morten Jespersen":{"home":2,"away":1,"sign":1,"points":0},"Lars Navntoft":{"home":0,"away":0,"sign":"x","points":0}}},{"round":"Round 3","group":"J","home":"Algeriet","away":"Østrig","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":1,"away":1,"sign":"X","points":0},"Frederik Franck":{"home":1,"away":2,"sign":2,"points":0},"Martin Thomsen":{"home":0,"away":1,"sign":2,"points":0},"Sigrid Pepke":{"home":0,"away":1,"sign":2,"points":0},"Felix Suneson":{"home":2,"away":3,"sign":2,"points":0},"Martin Haupt Højer":{"home":1,"away":1,"sign":"x","points":0},"Sarah Ferguen":{"home":1,"away":2,"sign":2,"points":0},"Nicolai Trier":{"home":1,"away":1,"sign":"x","points":0},"Jakob Skov":{"home":0,"away":1,"sign":2,"points":0},"Jonas Andersen":{"home":1,"away":1,"sign":"X","points":0},"Nadia Laas":{"home":1,"away":2,"sign":2,"points":0},"Lasse Kjellerup":{"home":0,"away":1,"sign":2,"points":0},"Simon Baudtler":{"home":1,"away":1,"sign":1,"points":0},"Patrick Klarlund":{"home":1,"away":1,"sign":"x","points":0},"Esben Dickenson":{"home":1,"away":2,"sign":2,"points":0},"Rasmus Aabenhuus":{"home":1,"away":1,"sign":"x","points":0},"Michael Weirsøe":{"home":0,"away":1,"sign":2,"points":0},"Morten Jespersen":{"home":1,"away":1,"sign":"x","points":0},"Lars Navntoft":{"home":0,"away":2,"sign":2,"points":0}}},{"round":"Round 3","group":"J","home":"Jordan","away":"Argentina","result_home":null,"result_away":null,"sign":null,"predictions":{"Thomas Heegaard":{"home":0,"away":4,"sign":2,"points":0},"Frederik Franck":{"home":1,"away":3,"sign":2,"points":0},"Martin Thomsen":{"home":0,"away":3,"sign":1,"points":0},"Sigrid Pepke":{"home":0,"away":3,"sign":2,"points":0},"Felix Suneson":{"home":0,"away":4,"sign":2,"points":0},"Martin Haupt Højer":{"home":0,"away":3,"sign":2,"points":0},"Sarah Ferguen":{"home":0,"away":4,"sign":2,"points":0},"Nicolai Trier":{"home":0,"away":2,"sign":2,"points":0},"Jakob Skov":{"home":0,"away":2,"sign":2,"points":0},"Jonas Andersen":{"home":0,"away":2,"sign":2,"points":0},"Nadia Laas":{"home":0,"away":4,"sign":2,"points":0},"Lasse Kjellerup":{"home":0,"away":4,"sign":2,"points":0},"Simon Baudtler":{"home":0,"away":2,"sign":2,"points":0},"Patrick Klarlund":{"home":0,"away":2,"sign":2,"points":0},"Esben Dickenson":{"home":0,"away":3,"sign":2,"points":0},"Rasmus Aabenhuus":{"home":0,"away":3,"sign":2,"points":0},"Michael Weirsøe":{"home":0,"away":3,"sign":2,"points":0},"Morten Jespersen":{"home":0,"away":4,"sign":2,"points":0},"Lars Navntoft":{"home":0,"away":4,"sign":2,"points":0}}}],"placements":{"Gold":{"Thomas Heegaard":"Spanien","Frederik Franck":"Frankrig","Martin Thomsen":"Holland","Sigrid Pepke":"Spanien","Felix Suneson":"Spanien ","Martin Haupt Højer":"Spanien","Sarah Ferguen":"Brasilien","Nicolai Trier":"Spanien ","Jakob Skov":"Spanien ","Jonas Andersen":"Portugal","Nadia Laas":"Spanien","Lasse Kjellerup":"Frankrig","Simon Baudtler":"Spanien","Patrick Klarlund":"Frankrig","Esben Dickenson":"Frankrig","Rasmus Aabenhuus":"Spanien","Michael Weirsøe":"Frankrig","Morten Jespersen":"Frankrig","Lars Navntoft":"Argentina"},"Silver":{"Thomas Heegaard":"England","Frederik Franck":"Spanien","Martin Thomsen":"Spanien","Sigrid Pepke":"Frankrig","Felix Suneson":"Frankrig ","Martin Haupt Højer":"Holland","Sarah Ferguen":"Tyskland","Nicolai Trier":"Frankrig ","Jakob Skov":"Frankrig ","Jonas Andersen":"Argentina","Nadia Laas":"Frankrig","Lasse Kjellerup":"Spanien","Simon Baudtler":"Tyskland","Patrick Klarlund":"Spanien","Esben Dickenson":"Brasilien","Rasmus Aabenhuus":"Frankrig","Michael Weirsøe":"England","Morten Jespersen":"Brasilien","Lars Navntoft":"Portugal"},"Bronze":{"Thomas Heegaard":"Frankrig","Frederik Franck":"England","Martin Thomsen":"Brasilien","Sigrid Pepke":"Tyskland","Felix Suneson":"Portugal ","Martin Haupt Højer":"Portugal","Sarah Ferguen":"England","Nicolai Trier":"England","Jakob Skov":"Argentina","Jonas Andersen":"Spanien","Nadia Laas":"Brasilien","Lasse Kjellerup":"England","Simon Baudtler":"England","Patrick Klarlund":"Argentina","Esben Dickenson":"Norge","Rasmus Aabenhuus":"England","Michael Weirsøe":"Spanien","Morten Jespersen":"Argentina","Lars Navntoft":"Spanien"},"1st topscorer":{"Thomas Heegaard":"Mbappe","Frederik Franck":"Mbappe","Martin Thomsen":"M. Oyarzabal","Sigrid Pepke":"Mbappe","Felix Suneson":"haaland","Martin Haupt Højer":"Kylian Mbappe","Sarah Ferguen":"Mbappe","Nicolai Trier":"Mbappe","Jakob Skov":"Mbappe","Jonas Andersen":"Mbappe","Nadia Laas":"Mbappe","Lasse Kjellerup":"Mbappe","Simon Baudtler":"Haaland","Patrick Klarlund":"Mbappe","Esben Dickenson":"Haaland","Rasmus Aabenhuus":"Kane","Michael Weirsøe":"Mbappe","Morten Jespersen":"Kylian Mbappe","Lars Navntoft":"Haaland"},"2nd topscorer":{"Thomas Heegaard":"Kane","Frederik Franck":"Kane","Martin Thomsen":"M. Depay","Sigrid Pepke":"Oyarzabal","Felix Suneson":"kane","Martin Haupt Højer":"Christiano Ronaldo","Sarah Ferguen":"Messi","Nicolai Trier":"Kane ","Jakob Skov":"Oyarzabal","Jonas Andersen":"Kane ","Nadia Laas":"Kane","Lasse Kjellerup":"Kane","Simon Baudtler":"Kai","Patrick Klarlund":"Yamal","Esben Dickenson":"Kane","Rasmus Aabenhuus":"Mbappe","Michael Weirsøe":"Kane","Morten Jespersen":"Vinicius Jr.","Lars Navntoft":"Oyarzabal"},"3rd topscorer":{"Thomas Heegaard":"Oyarzabal","Frederik Franck":"Haaland","Martin Thomsen":"H. Kane","Sigrid Pepke":"H. Kane","Felix Suneson":"wirtz","Martin Haupt Højer":"Harry Kane","Sarah Ferguen":"Kane","Nicolai Trier":"Haverts","Jakob Skov":"H. Kane","Jonas Andersen":"Olise","Nadia Laas":"Haaland","Lasse Kjellerup":"Haaland","Simon Baudtler":"Oyarzabal","Patrick Klarlund":"Haverts","Esben Dickenson":"Mbappe","Rasmus Aabenhuus":"Yamal","Michael Weirsøe":"Messi","Morten Jespersen":"Harry Kane","Lars Navntoft":"Kane"}}};
+
+// Supabase config
+const SUPABASE_URL = 'https://jkcjeukrfvvhoxwffupb.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprY2pldWtyZnZ2aG94d2ZmdXBiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MjI5NjMsImV4cCI6MjA5NzA5ODk2M30.XeZlsAGfasdjuc3vNpobkNN7KSH-o4eJcsVIhZg60Pk';
+
+async function dbGet(table) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=*`, {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+  });
+  return res.ok ? res.json() : [];
+}
+
+async function dbUpsert(table, rows) {
+  await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates'
+    },
+    body: JSON.stringify(rows)
+  });
+}
+
+let results = {};
+let specialResults = {};
+
+function applyResults() {
+  DATA.matches.forEach((m,i) => {
+    if (results[i]) {
+      m.result_home = results[i].home;
+      m.result_away = results[i].away;
+      m.sign = results[i].sign;
+      DATA.participants.forEach(p => {
+        const pred = m.predictions[p];
+        if (!pred) return;
+        const sign = String(results[i].sign).toLowerCase();
+        const predSign = String(pred.sign).toLowerCase();
+        const exactScore = pred.home === m.result_home && pred.away === m.result_away;
+        const correctSign = predSign === sign;
+        let pts = 0;
+        if (exactScore) pts += 3;
+        if (correctSign) pts += 1;
+        pred.points = pts;
+      });
+    }
+  });
+}
+
+const SCHEDULE = [
+  ["Mexico", "Sydafrika", "11. jun", "21:00"],
+  ["Sydkorea", "Tjekkiet", "12. jun", "04:00"],
+  ["Canada", "Bosnien-Hercegovina", "12. jun", "21:00"],
+  ["USA", "Paraguay", "13. jun", "03:00"],
+  ["Qatar", "Schweiz", "13. jun", "21:00"],
+  ["Brasilien", "Marokko", "14. jun", "00:00"],
+  ["Haiti", "Skotland", "14. jun", "03:00"],
+  ["Australien", "Tyrkiet", "14. jun", "06:00"],
+  ["Tyskland", "Curacao", "14. jun", "19:00"],
+  ["Holland", "Japan", "14. jun", "22:00"],
+  ["Elfenbenskysten", "Ecuador", "15. jun", "01:00"],
+  ["Sverige", "Tunesien", "15. jun", "04:00"],
+  ["Spanien", "Kap Verde", "15. jun", "18:00"],
+  ["Belgien", "Egypten", "15. jun", "21:00"],
+  ["Saudi Arabien", "Uruguay", "16. jun", "00:00"],
+  ["Iran", "New Zealand", "16. jun", "03:00"],
+  ["Frankrig", "Senegal", "16. jun", "21:00"],
+  ["Irak", "Norge", "17. jun", "00:00"],
+  ["Argentina", "Algeriet", "17. jun", "03:00"],
+  ["Østrig", "Jordan", "17. jun", "06:00"],
+  ["Portugal", "DR Congo", "17. jun", "19:00"],
+  ["England", "Kroatien", "17. jun", "22:00"],
+  ["Ghana", "Panama", "18. jun", "01:00"],
+  ["Uzbekistan", "Colombia", "18. jun", "04:00"],
+  ["Tjekkiet", "Sydafrika", "18. jun", "18:00"],
+  ["Schweiz", "Bosnien-Hercegovina", "18. jun", "21:00"],
+  ["Canada", "Qatar", "19. jun", "00:00"],
+  ["Mexico", "Sydkorea", "19. jun", "03:00"],
+  ["Tyrkiet", "Paraguay", "20. jun", "05:00"],
+  ["USA", "Australien", "19. jun", "21:00"],
+  ["Skotland", "Marokko", "20. jun", "00:00"],
+  ["Brasilien", "Haiti", "20. jun", "02:30"],
+  ["Holland", "Sverige", "20. jun", "19:00"],
+  ["Tyskland", "Elfenbenskysten", "20. jun", "22:00"],
+  ["Ecuador", "Curacao", "21. jun", "02:00"],
+  ["Tunesien", "Japan", "21. jun", "06:00"],
+  ["Spanien", "Saudi Arabien", "21. jun", "18:00"],
+  ["Belgien", "Iran", "21. jun", "21:00"],
+  ["Uruguay", "Kap Verde", "22. jun", "00:00"],
+  ["New Zealand", "Egypten", "22. jun", "03:00"],
+  ["Argentina", "Østrig", "22. jun", "19:00"],
+  ["Frankrig", "Irak", "22. jun", "23:00"],
+  ["Norge", "Senegal", "23. jun", "02:00"],
+  ["Jordan", "Algeriet", "23. jun", "05:00"],
+  ["Portugal", "Uzbekistan", "23. jun", "19:00"],
+  ["England", "Ghana", "23. jun", "22:00"],
+  ["Panama", "Kroatien", "24. jun", "01:00"],
+  ["Colombia", "DR Congo", "24. jun", "04:00"],
+  ["Bosnien-Hercegovina", "Qatar", "24. jun", "21:00"],
+  ["Schweiz", "Canada", "24. jun", "21:00"],
+  ["Marokko", "Haiti", "25. jun", "00:00"],
+  ["Skotland", "Brasilien", "25. jun", "00:00"],
+  ["Sydafrika", "Sydkorea", "25. jun", "03:00"],
+  ["Tjekkiet", "Mexico", "25. jun", "03:00"],
+  ["Curacao", "Elfenbenskysten", "25. jun", "22:00"],
+  ["Ecuador", "Tyskland", "25. jun", "22:00"],
+  ["Japan", "Sverige", "26. jun", "01:00"],
+  ["Tunesien", "Holland", "26. jun", "01:00"],
+  ["Paraguay", "Australien", "26. jun", "04:00"],
+  ["Tyrkiet", "USA", "26. jun", "04:00"],
+  ["Norge", "Frankrig", "26. jun", "21:00"],
+  ["Senegal", "Irak", "26. jun", "21:00"],
+  ["Kap Verde", "Saudi Arabien", "27. jun", "02:00"],
+  ["Uruguay", "Spanien", "27. jun", "02:00"],
+  ["Egypten", "Iran", "27. jun", "05:00"],
+  ["New Zealand", "Belgien", "27. jun", "05:00"],
+  ["Kroatien", "Ghana", "27. jun", "23:00"],
+  ["Panama", "England", "27. jun", "23:00"],
+  ["Colombia", "Portugal", "28. jun", "01:30"],
+  ["DR Congo", "Uzbekistan", "28. jun", "01:30"],
+  ["Algeriet", "Østrig", "28. jun", "04:00"],
+  ["Jordan", "Argentina", "28. jun", "04:00"],
+];
+
+function getSchedule(home, away) {
+  const s = SCHEDULE.find(r => r[0]===home && r[1]===away);
+  return s ? {date: s[2], time: s[3]} : null;
+}
+
+async function loadFromDB() {
+  const [matchRows, specialRows] = await Promise.all([dbGet('match_results'), dbGet('special_results')]);
+  matchRows.forEach(r => { results[r.match_index] = { home: r.result_home, away: r.result_away, sign: r.sign }; });
+  specialRows.forEach(r => { specialResults[r.category] = r.value; });
+  applyResults();
+}
+
+function getSign(h, a) {
+  if (h > a) return '1';
+  if (h < a) return '2';
+  return 'x';
+}
+
+function calcTotals() {
+  const totals = {};
+  DATA.participants.forEach(p => { totals[p] = 0; });
+  DATA.matches.forEach(m => {
+    if (m.result_home === null) return;
+    DATA.participants.forEach(p => {
+      const pred = m.predictions[p];
+      if (pred) totals[p] += (pred.points || 0);
+    });
+  });
+  // add special points
+  ['Gold','Silver','Bronze'].forEach(cat => {
+    const actual = specialResults[cat];
+    if (!actual) return;
+    DATA.participants.forEach(p => {
+      const guess = (DATA.placements[cat][p] || '').trim().toLowerCase();
+      if (guess === actual.trim().toLowerCase()) totals[p] += 10;
+    });
+  });
+  ['1st topscorer','2nd topscorer','3rd topscorer'].forEach(cat => {
+    const actual = specialResults[cat];
+    if (!actual) return;
+    DATA.participants.forEach(p => {
+      const guess = (DATA.placements[cat][p] || '').trim().toLowerCase();
+      if (guess === actual.trim().toLowerCase()) totals[p] += 10;
+    });
+  });
+  return totals;
+}
+
+function gotoPlayer(name) {
+  const sel = document.getElementById('player-select');
+  if (!sel.innerHTML) {
+    DATA.participants.forEach(p => {
+      const o = document.createElement('option');
+      o.value = p; o.textContent = p;
+      sel.appendChild(o);
+    });
+  }
+  sel.value = name;
+  const mineTab = document.querySelector('.tab:nth-child(2)');
+  showTab('mine', mineTab);
+  renderMine();
+}
+
+function checkAdminPw() {
+  const pw = document.getElementById('admin-pw').value;
+  if (pw === 'tjummistjips1234') {
+    document.getElementById('admin-lock').style.display = 'none';
+    document.getElementById('admin-content').style.display = 'block';
+    adminUnlocked = true;
+    renderAdmin();
+  } else {
+    document.getElementById('admin-pw-error').style.display = 'block';
+    document.getElementById('admin-pw').value = '';
+  }
+}
+
+function showTab(id, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  if (el) el.classList.add('active');
+  if (id==='rangliste') renderRangliste();
+  if (id==='mine') renderMine();
+  if (id==='kampe') renderKampe();
+  if (id==='admin' && adminUnlocked) renderAdmin();
+  if (id==='praemier') renderPraemier();
+}
+
+function calcRanks(totalsObj) {
+  // RANK-style: same points = same rank, next rank skips
+  const sorted = DATA.participants.slice().sort((a,b) => totalsObj[b]-totalsObj[a]);
+  const ranks = {};
+  sorted.forEach((p,i) => {
+    if (i===0) { ranks[p]=1; return; }
+    ranks[p] = totalsObj[p]===totalsObj[sorted[i-1]] ? ranks[sorted[i-1]] : i+1;
+  });
+  return ranks;
+}
+
+function renderRangliste() {
+  const totals = calcTotals();
+  const ranks = calcRanks(totals);
+  const sorted = DATA.participants.slice().sort((a,b) => totals[b]-totals[a]);
+
+  // Compute "totals before last 5 played matches" for movement
+  const playedMatches = DATA.matches.filter(m => m.result_home !== null);
+  const last5 = playedMatches.slice(-5);
+  const totalsOld = {};
+  DATA.participants.forEach(p => { totalsOld[p] = 0; });
+  DATA.matches.forEach(m => {
+    if (m.result_home === null) return;
+    if (last5.includes(m)) return; // exclude last 5
+    DATA.participants.forEach(p => {
+      const pred = m.predictions[p];
+      if (pred) totalsOld[p] += (pred.points || 0);
+    });
+  });
+  // add special points to old too (they don't change over last 5 matches)
+  ['Gold','Silver','Bronze'].forEach(cat => {
+    const actual = specialResults[cat];
+    if (!actual) return;
+    DATA.participants.forEach(p => {
+      const guess = (DATA.placements[cat][p]||'').trim().toLowerCase();
+      if (guess===actual.trim().toLowerCase()) totalsOld[p]+=10;
+    });
+  });
+  ['1st topscorer','2nd topscorer','3rd topscorer'].forEach(cat => {
+    const actual = specialResults[cat];
+    if (!actual) return;
+    DATA.participants.forEach(p => {
+      const guess = (DATA.placements[cat][p]||'').trim().toLowerCase();
+      if (guess===actual.trim().toLowerCase()) totalsOld[p]+=10;
+    });
+  });
+  const ranksOld = calcRanks(totalsOld);
+
+  const medals = ['🥇','🥈','🥉'];
+  const prizes = [1140, 570, 190];
+  const podiumEl = document.getElementById('podium');
+  podiumEl.innerHTML = sorted.slice(0,3).map((p,i) => `
+    <div class="podium-card p${i+1}">
+      <div class="podium-rank">${medals[i]}</div>
+      <div class="podium-name">${p}</div>
+      <div class="podium-pts">${totals[p]}</div>
+      <div class="prize-pct" style="color:#7a9cc4;font-size:0.85rem">${prizes[i].toLocaleString('da')} kr</div>
+    </div>`).join('');
+
+  const lbEl = document.getElementById('lb-rows');
+  lbEl.innerHTML = sorted.map(p => {
+    const rank = ranks[p];
+    const oldRank = ranksOld[p];
+    const diff = oldRank - rank;
+    let moveHTML = '';
+    if (playedMatches.length < 1) {
+      moveHTML = `<span class="lb-move same">–</span>`;
+    } else if (diff > 0) {
+      moveHTML = `<span class="lb-move up">▲ ${diff}</span>`;
+    } else if (diff < 0) {
+      moveHTML = `<span class="lb-move down">▼ ${Math.abs(diff)}</span>`;
+    } else {
+      moveHTML = `<span class="lb-move same">= 0</span>`;
+    }
+    const rankColor = rank===1?'#f5c842':rank===2?'#b0b8c8':rank===3?'#b07a40':'#5a7aa4';
+    return `<div class="lb-row" ondblclick="gotoPlayer('${p.replace(/'/g, "\\'")}')" style="cursor:pointer" title="Dobbeltklik for at se ${p}s resultater">
+      <span class="lb-rank" style="color:${rankColor};font-size:1rem">${rank}</span>
+      <span class="lb-name">${p}</span>
+      <span class="lb-pts">${totals[p]}</span>
+      ${moveHTML}
+    </div>`;
+  }).join('');
+}
+
+function renderMine() {
+  const sel = document.getElementById('player-select');
+  if (!sel.innerHTML) {
+    DATA.participants.forEach(p => {
+      const o = document.createElement('option');
+      o.value = p; o.textContent = p;
+      sel.appendChild(o);
+    });
+  }
+  const player = sel.value;
+  const totals = calcTotals();
+  const played = DATA.matches.filter(m => m.result_home !== null);
+  const pts = totals[player] || 0;
+  const correct = DATA.matches.filter(m => m.result_home !== null && m.predictions[player] && m.predictions[player].points >= 3).length;
+  const signOk = DATA.matches.filter(m => {
+    if (m.result_home === null) return false;
+    const pred = m.predictions[player];
+    if (!pred) return false;
+    return String(pred.sign).toLowerCase().trim() === String(m.sign).toLowerCase().trim();
+  }).length;
+  const remaining = DATA.matches.filter(m => m.result_home === null).length;
+  const specialCats = ['Gold','Silver','Bronze','1st topscorer','2nd topscorer','3rd topscorer'];
+  const specialRemaining = specialCats.filter(cat => !specialResults[cat]).length;
+  const ptsLeft = remaining * 4 + specialRemaining * 10;
+
+  document.getElementById('player-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-val">${pts}</div><div class="stat-lbl">Point total</div></div>
+    <div class="stat-card"><div class="stat-val">${correct}</div><div class="stat-lbl">Korrekt score</div></div>
+    <div class="stat-card"><div class="stat-val">${signOk}</div><div class="stat-lbl">Korrekt tegn</div></div>
+    <div class="stat-card"><div class="stat-val">${played.length}</div><div class="stat-lbl">Kampe spillet</div></div>
+    <div class="stat-card"><div class="stat-val">${remaining}</div><div class="stat-lbl">Kampe tilbage</div></div>
+    <div class="stat-card"><div class="stat-val">${ptsLeft}</div><div class="stat-lbl">Point tilbage</div></div>`;
+
+  const pl = DATA.placements;
+  const placementHTML = `
+    <div style="font-size:0.65rem;color:#5a7aa4;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:0.35rem">Placerings-gæt</div>
+    <div style="display:grid;gap:0.15rem;font-size:0.8rem">
+      <div style="display:flex;gap:0.4rem"><span style="color:#f5c842">🥇</span><span style="color:#e8eaf0">${(pl['Gold'][player]||'–').trim()}</span></div>
+      <div style="display:flex;gap:0.4rem"><span style="color:#b0b8c8">🥈</span><span style="color:#e8eaf0">${(pl['Silver'][player]||'–').trim()}</span></div>
+      <div style="display:flex;gap:0.4rem"><span style="color:#b07a40">🥉</span><span style="color:#e8eaf0">${(pl['Bronze'][player]||'–').trim()}</span></div>
+    </div>`;
+  const topscorerHTML = `
+    <div style="font-size:0.65rem;color:#5a7aa4;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:0.35rem">Topscorer-gæt</div>
+    <div style="display:grid;gap:0.15rem;font-size:0.8rem">
+      <div style="display:flex;gap:0.4rem"><span style="color:#7a9cc4">#1</span><span style="color:#e8eaf0">${(pl['1st topscorer'][player]||'–').trim()}</span></div>
+      <div style="display:flex;gap:0.4rem"><span style="color:#7a9cc4">#2</span><span style="color:#e8eaf0">${(pl['2nd topscorer'][player]||'–').trim()}</span></div>
+      <div style="display:flex;gap:0.4rem"><span style="color:#7a9cc4">#3</span><span style="color:#e8eaf0">${(pl['3rd topscorer'][player]||'–').trim()}</span></div>
+    </div>`;
+  document.getElementById('player-guesses-placement').innerHTML = placementHTML;
+  document.getElementById('player-guesses-topscorer').innerHTML = topscorerHTML;
+  document.getElementById('player-guesses-placement-mobile').innerHTML = placementHTML;
+  document.getElementById('player-guesses-topscorer-mobile').innerHTML = topscorerHTML;
+
+  const mEl = document.getElementById('mine-matches');
+  mEl.innerHTML = DATA.matches.map(m => {
+    const pred = m.predictions[player];
+    if (!pred) return '';
+    const hasResult = m.result_home !== null;
+    const pts = pred.points;
+    const ptsClass = !hasResult ? 'pts-pending' : pts>=4?'pts-4':pts>=3?'pts-3':pts>=1?'pts-1':'pts-0';
+    const ptsStr = !hasResult ? '–' : pts;
+    const resultStr = hasResult ? `${m.result_home}–${m.result_away}` : '<span style="color:#5a7aa4;font-size:0.8rem">ikke spillet</span>';
+    const predStr = `${pred.home}–${pred.away}`;
+    const roundFull = m.round.replace('Round', 'Runde');
+    const rowStyle = !hasResult ? 'opacity:0.65;' : '';
+    const homeWin = hasResult && m.result_home > m.result_away;
+    const awayWin = hasResult && m.result_away > m.result_home;
+    const homeStyle = homeWin ? 'font-weight:600' : 'font-weight:400';
+    const awayStyle = awayWin ? 'font-weight:600' : 'font-weight:400';
+    return `<div class="match-card-desktop match-card" style="${rowStyle}">
+      <span class="match-round">${roundFull}</span>
+      <span class="match-round">Gruppe ${m.group}</span>
+      <span class="match-teams" style="${homeStyle}">${m.home}<br><span class="match-away" style="${awayStyle}">${m.away}</span></span>
+      <span class="match-pred-first">${predStr}</span>
+      <span class="match-pred-last">${String(pred.sign).toUpperCase()}</span>
+      <span class="match-result-sep">${resultStr}</span>
+      <span class="match-pts ${ptsClass}">${ptsStr}</span>
+    </div>
+    <div class="match-card-mobile" style="background:#0d1b3e;border:1px solid #1e3a6e;border-radius:8px;padding:0.75rem 1rem;${rowStyle};display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem">
+        <span style="font-size:0.7rem;color:#5a7aa4;font-weight:600;text-transform:uppercase">${roundFull} · Gruppe ${m.group}</span>
+        <span class="match-pts ${ptsClass}" style="font-size:1rem;font-weight:700">${ptsStr} pt</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="${homeStyle};font-size:0.9rem">${m.home}<br><span style="${awayStyle};font-size:0.85rem;color:#9ab0cc">${m.away}</span></span>
+        <div style="display:flex;gap:1.5rem;align-items:center">
+          <div style="text-align:center">
+            <div style="font-size:0.65rem;color:#5a7aa4;margin-bottom:2px">GÆT</div>
+            <div style="color:#9ab0cc;font-weight:600">${predStr} (${String(pred.sign).toUpperCase()})</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:0.65rem;color:#5a7aa4;margin-bottom:2px">RESULTAT</div>
+            <div style="font-weight:700;color:#fff">${resultStr}</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderKampe() {
+  const rounds = ['Round 1','Round 2','Round 3'];
+  const el = document.getElementById('kampe-list');
+  el.innerHTML = rounds.map(r => {
+    const ms = DATA.matches.filter(m => m.round === r);
+    return `<div class="round-section">
+      <div class="round-title">${r.replace('Round','Runde')}</div>
+      ${ms.map((m,mi) => {
+        const hasResult = m.result_home !== null;
+        const matchId = `match-${r.replace(' ','')}-${mi}`;
+        const predsHtml = `<div id="${matchId}-preds" style="display:none;margin-top:0.7rem;padding-top:0.7rem;border-top:1px solid #111e38">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:0.4rem">
+            ${DATA.participants.map(p => {
+              const pred = m.predictions[p];
+              if(!pred) return '';
+              const scoreStr = `${pred.home}–${pred.away}`;
+              const signStr = String(pred.sign).toUpperCase();
+              const pts = hasResult ? pred.points : null;
+              const bg = pts===null?'#091428':pts>=4?'#0d2a0d':pts>=3?'#0d2218':pts>=1?'#1a1a00':'#1a0a0a';
+              const col = pts===null?'#7a9cc4':pts>=4?'#22c55e':pts>=3?'#86efac':pts>=1?'#fbbf24':'#ef4444';
+              return `<div style="background:${bg};border-radius:5px;padding:0.35rem 0.5rem;font-size:0.75rem">
+                <div style="color:#9ab0cc;font-size:0.7rem;margin-bottom:1px">${p.split(' ')[0]}</div>
+                <div style="font-weight:600;color:${col}">${scoreStr} <span style="color:#5a7aa4">${signStr}</span>${pts!==null?` <span style="color:${col}">(${pts}p)</span>`:''}</div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+        const homeWin = hasResult && m.result_home > m.result_away;
+        const awayWin = hasResult && m.result_away > m.result_home;
+        const homeW = homeWin ? 'font-weight:600' : awayWin ? 'font-weight:400;opacity:0.4' : 'font-weight:400';
+        const awayW = awayWin ? 'font-weight:600' : homeWin ? 'font-weight:400;opacity:0.4' : 'font-weight:400';
+        const sched = getSchedule(m.home, m.away);
+        const schedHTML = sched ? `<span style="font-size:0.7rem;color:#5a7aa4;margin-left:0.5rem">${sched.date} · ${sched.time}</span>` : '';
+        return `<div class="match-all" style="flex-direction:column;display:block;cursor:pointer" onclick="togglePreds('${matchId}')">
+          <div class="kampe-desktop" style="display:grid;grid-template-columns:auto 1fr auto 1fr;align-items:center;gap:0.5rem">
+            <div style="font-size:0.7rem;color:#5a7aa4;font-weight:600;white-space:nowrap">Gruppe ${m.group}${schedHTML}</div>
+            <div class="team-home" style="${homeW}">${m.home}</div>
+            <div class="score-box">
+              ${hasResult ? `<div class="score-num">${m.result_home} – ${m.result_away}</div>` : `<div class="score-pending">ikke spillet</div>`}
+              <div class="group-badge"><span style="color:#4a9eff;font-size:0.68rem">vis gæt ▾</span></div>
+            </div>
+            <div class="team-away" style="${awayW}">${m.away}</div>
+          </div>
+          <div class="kampe-mobile" style="display:none">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem">
+              <span style="font-size:0.65rem;color:#5a7aa4;font-weight:600">Gruppe ${m.group}</span>
+              ${sched ? `<span style="font-size:0.65rem;color:#5a7aa4">${sched.date} · ${sched.time}</span>` : ''}
+            </div>
+            <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:0.4rem">
+              <div style="${homeW};font-size:0.85rem;text-align:right">${m.home}</div>
+              <div style="text-align:center;min-width:70px">
+                ${hasResult ? `<div style="font-size:1rem;font-weight:700;color:#4a9eff">${m.result_home} – ${m.result_away}</div>` : `<div style="font-size:0.75rem;color:#5a7aa4;padding:2px 6px;background:#091428;border-radius:4px">ikke spillet</div>`}
+                <div style="color:#4a9eff;font-size:0.65rem;margin-top:2px">vis gæt ▾</div>
+              </div>
+              <div style="${awayW};font-size:0.85rem;text-align:left">${m.away}</div>
+            </div>
+          </div>
+          ${predsHtml}
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+}
+
+function togglePreds(id) {
+  const el = document.getElementById(id+'-preds');
+  if (el) el.style.display = el.style.display==='none' ? 'block' : 'none';
+}
+
+function renderAdmin() {
+  const el = document.getElementById('admin-matches');
+  el.innerHTML = `<div class="admin-row" style="background:transparent;font-size:0.75rem;color:#5a7aa4;font-weight:600;text-transform:uppercase">
+    <span>Kamp</span><span style="text-align:center">Hjemme</span><span style="text-align:center">Ude</span>
+  </div>` + DATA.matches.map((m,i) => {
+    const h = m.result_home !== null ? m.result_home : '';
+    const a = m.result_away !== null ? m.result_away : '';
+    return `<div class="admin-row">
+      <span class="admin-teams">${m.home} – ${m.away}<br><span style="color:#5a7aa4;font-size:0.75rem">R${i%24+1} · Gr.${m.group}</span></span>
+      <input class="admin-inp" id="r-${i}-h" type="number" min="0" max="20" value="${h}" placeholder="–">
+      <input class="admin-inp" id="r-${i}-a" type="number" min="0" max="20" value="${a}" placeholder="–">
+    </div>`;
+  }).join('');
+
+  const specEl = document.getElementById('admin-special');
+  const cats = ['Gold','Silver','Bronze','1st topscorer','2nd topscorer','3rd topscorer'];
+  const labels = ['🥇 Guld','🥈 Sølv','🥉 Bronze','⚽ Topscorer #1','⚽ Topscorer #2','⚽ Topscorer #3'];
+  specEl.innerHTML = cats.map((cat,i) => `
+    <div class="admin-spec-row">
+      <span class="admin-spec-lbl">${labels[i]}</span>
+      <input class="admin-inp" id="spec-${i}" type="text" value="${specialResults[cat]||''}" placeholder="fx Spanien / Mbappe">
+    </div>`).join('');
+}
+
+async function saveResults() {
+  DATA.matches.forEach((m,i) => {
+    const hEl = document.getElementById(`r-${i}-h`);
+    const aEl = document.getElementById(`r-${i}-a`);
+    if (!hEl || !aEl) return;
+    const h = hEl.value.trim();
+    const a = aEl.value.trim();
+    if (h===''||a==='') return;
+    const hn = parseInt(h), an = parseInt(a);
+    if (isNaN(hn)||isNaN(an)) return;
+    m.result_home = hn;
+    m.result_away = an;
+    m.sign = getSign(hn,an);
+    results[i] = {home:hn, away:an, sign:m.sign};
+    // recalc points
+    DATA.participants.forEach(p => {
+      const pred = m.predictions[p];
+      if (!pred) return;
+      const actualSign = m.sign;
+      const predSign = String(pred.sign).toLowerCase().trim();
+      const exact = pred.home===hn && pred.away===an;
+      const signOk = predSign===actualSign||predSign===String(actualSign);
+      let pts=0;
+      if(exact) pts+=3;
+      if(signOk) pts+=1;
+      pred.points=pts;
+    });
+  });
+  const rows = Object.entries(results).map(([idx, r]) => ({match_index: parseInt(idx), result_home: r.home, result_away: r.away, sign: String(r.sign)}));
+  await dbUpsert('match_results', rows);
+  alert('✅ Resultater gemt og point beregnet!');
+}
+
+async function saveSpecial() {
+  const cats = ['Gold','Silver','Bronze','1st topscorer','2nd topscorer','3rd topscorer'];
+  cats.forEach((cat,i) => {
+    const val = document.getElementById(`spec-${i}`).value.trim();
+    if (val) specialResults[cat] = val;
+  });
+  const rows = Object.entries(specialResults).map(([cat, val]) => ({category: cat, value: val}));
+  await dbUpsert('special_results', rows);
+  alert('✅ Slutresultater gemt!');
+}
+
+function renderPraemier() {
+  const el = document.getElementById('placements-table');
+  const cats = ['Gold','Silver','Bronze','1st topscorer','2nd topscorer','3rd topscorer'];
+  const labels = ['🥇 Guld','🥈 Sølv','🥉 Bronze','⚽ Topscorer #1','⚽ Topscorer #2','⚽ Topscorer #3'];
+  el.innerHTML = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:0.8rem">
+    <thead><tr style="border-bottom:1px solid #1e3a6e">
+      <th style="text-align:left;padding:0.5rem 0.4rem;color:#5a7aa4;font-weight:600">Kategori</th>
+      ${DATA.participants.map(p=>`<th style="text-align:center;padding:0.5rem 0.3rem;color:#7a9cc4;font-size:0.7rem;white-space:nowrap">${p.split(' ')[0]}</th>`).join('')}
+    </tr></thead>
+    <tbody>${cats.map((cat,i)=>`<tr style="border-bottom:1px solid #0d1525">
+      <td style="padding:0.5rem 0.4rem;color:#9ab0cc;font-weight:500;white-space:nowrap">${labels[i]}</td>
+      ${DATA.participants.map(p=>`<td style="text-align:center;padding:0.5rem 0.3rem;color:#7a9cc4">${(DATA.placements[cat][p]||'').trim()}</td>`).join('')}
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+// Init - load from Supabase then render
+loadFromDB().then(() => renderRangliste());
+</script>
+</body>
+</html>
