@@ -124,6 +124,8 @@ select{width:100%;text-align:center}
 @media(max-width:600px){
 .kampe-desktop{display:none !important}
 .kampe-mobile{display:block !important}
+.status-bar-desktop{display:none !important}
+.status-bar-mobile{display:grid !important}
 }
 </style>
 </head>
@@ -151,6 +153,7 @@ select{width:100%;text-align:center}
 <!-- RANGLISTE -->
 <div id="tab-rangliste" class="section active">
   <div class="podium" id="podium"></div>
+  <div id="tournament-status" style="margin-bottom:1.2rem"></div>
   <div class="leaderboard">
     <div class="lb-row lb-header"><span>#</span><span>Spiller</span><span style="text-align:right">Point</span><span style="text-align:right">Sidste 5</span></div>
     <div id="lb-rows" style="display:grid;gap:0.5rem;margin-top:0.5rem"></div>
@@ -180,6 +183,9 @@ select{width:100%;text-align:center}
 
 <!-- KAMPE -->
 <div id="tab-kampe" class="section">
+  <div style="margin-bottom:1rem">
+    <input id="kampe-search" type="text" placeholder="🔍  Søg efter hold, gruppe eller dato..." oninput="renderKampe()" style="width:100%;background:#0d1b3e;border:1px solid #1e3a6e;color:#e8eaf0;padding:0.65rem 1rem;border-radius:8px;font-size:0.9rem;outline:none">
+  </div>
   <div id="kampe-list"></div>
 </div>
 
@@ -479,6 +485,36 @@ function calcRanks(totalsObj) {
 
 function renderRangliste() {
   const totals = calcTotals();
+
+  // Tournament status bar
+  const played = DATA.matches.filter(m => m.result_home !== null).length;
+  const remaining = DATA.matches.length - played;
+  const specialCats = ['Gold','Silver','Bronze','1st topscorer','2nd topscorer','3rd topscorer'];
+  const specialRemaining = specialCats.filter(cat => !specialResults[cat]).length;
+  const ptsLeft = remaining * 4 + specialRemaining * 10;
+  const statusEl = document.getElementById('tournament-status');
+  statusEl.innerHTML = `
+    <div class="status-bar-desktop" style="background:#0d1b3e;border:1px solid #1e3a6e;border-radius:8px;padding:0.75rem 1.5rem;display:flex;align-items:center;justify-content:center;gap:2rem;font-size:0.85rem">
+      <span><strong style="color:#e8eaf0">${played}</strong> <span style="color:#7a9cc4">kampe spillet</span></span>
+      <span style="color:#2a4a7e">—</span>
+      <span><strong style="color:#e8eaf0">${remaining}</strong> <span style="color:#7a9cc4">kampe tilbage</span></span>
+      <span style="color:#2a4a7e">—</span>
+      <span><strong style="color:#4a9eff">${ptsLeft}</strong> <span style="color:#7a9cc4">point stadig i spil</span></span>
+    </div>
+    <div class="status-bar-mobile" style="display:none;grid-template-columns:repeat(3,1fr);gap:0.5rem">
+      <div style="background:#0d1b3e;border:1px solid #1e3a6e;border-radius:8px;padding:0.6rem;text-align:center">
+        <div style="font-size:1.1rem;font-weight:700;color:#e8eaf0">${played}</div>
+        <div style="font-size:0.65rem;color:#7a9cc4;text-transform:uppercase;margin-top:2px">Spillet</div>
+      </div>
+      <div style="background:#0d1b3e;border:1px solid #1e3a6e;border-radius:8px;padding:0.6rem;text-align:center">
+        <div style="font-size:1.1rem;font-weight:700;color:#e8eaf0">${remaining}</div>
+        <div style="font-size:0.65rem;color:#7a9cc4;text-transform:uppercase;margin-top:2px">Tilbage</div>
+      </div>
+      <div style="background:#0d1b3e;border:1px solid #1e3a6e;border-radius:8px;padding:0.6rem;text-align:center">
+        <div style="font-size:1.1rem;font-weight:700;color:#4a9eff">${ptsLeft}</div>
+        <div style="font-size:0.65rem;color:#7a9cc4;text-transform:uppercase;margin-top:2px">Pt. i spil</div>
+      </div>
+    </div>`;
   const ranks = calcRanks(totals);
   const sorted = DATA.participants.slice().sort((a,b) => totals[b]-totals[a]);
 
@@ -651,10 +687,20 @@ function renderMine() {
 }
 
 function renderKampe() {
+  const query = (document.getElementById('kampe-search')?.value || '').toLowerCase().trim();
   const rounds = ['Round 1','Round 2','Round 3'];
   const el = document.getElementById('kampe-list');
+  let totalShown = 0;
   el.innerHTML = rounds.map(r => {
-    const ms = DATA.matches.filter(m => m.round === r);
+    const ms = DATA.matches.filter(m => {
+      if (m.round !== r) return false;
+      if (!query) return true;
+      const sched = getSchedule(m.home, m.away);
+      const searchStr = `${m.home} ${m.away} gruppe ${m.group} ${sched ? sched.date + ' ' + sched.time : ''}`.toLowerCase();
+      return searchStr.includes(query);
+    });
+    if (ms.length === 0) return '';
+    totalShown += ms.length;
     return `<div class="round-section">
       <div class="round-title">${r.replace('Round','Runde')}</div>
       ${ms.map((m,mi) => {
@@ -712,6 +758,9 @@ function renderKampe() {
       }).join('')}
     </div>`;
   }).join('');
+  if (totalShown === 0) {
+    el.innerHTML = `<div style="text-align:center;padding:2rem;color:#5a7aa4;font-size:0.9rem">Ingen kampe matcher din søgning</div>`;
+  }
 }
 
 function togglePreds(id) {
