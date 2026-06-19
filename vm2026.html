@@ -299,10 +299,10 @@ async function dbUpsert(table, rows) {
   });
 }
 
-let results = {8:{home:7,away:1,sign:"1"},9:{home:2,away:2,sign:"x"},10:{home:1,away:0,sign:"1"},11:{home:5,away:1,sign:"1"},12:{home:0,away:0,sign:"x"},13:{home:1,away:1,sign:"x"},14:{home:1,away:1,sign:"x"},15:{home:2,away:2,sign:"x"},16:{home:3,away:1,sign:"1"},17:{home:1,away:4,sign:"2"},18:{home:3,away:0,sign:"1"},19:{home:3,away:1,sign:"1"},20:{home:1,away:1,sign:"x"},21:{home:4,away:2,sign:"1"},22:{home:1,away:0,sign:"1"},23:{home:1,away:3,sign:"2"}};
+let results = {27:{home:1,away:0,sign:"1"},8:{home:7,away:1,sign:"1"},9:{home:2,away:2,sign:"x"},10:{home:1,away:0,sign:"1"},11:{home:5,away:1,sign:"1"},12:{home:0,away:0,sign:"x"},13:{home:1,away:1,sign:"x"},14:{home:1,away:1,sign:"x"},15:{home:2,away:2,sign:"x"},16:{home:3,away:1,sign:"1"},17:{home:1,away:4,sign:"2"},18:{home:3,away:0,sign:"1"},19:{home:3,away:1,sign:"1"},20:{home:1,away:1,sign:"x"},21:{home:4,away:2,sign:"1"},22:{home:1,away:0,sign:"1"},23:{home:1,away:3,sign:"2"}};
 let specialResults = {};
 // Hardcoded fallback results for preview
-const HARDCODED_RESULTS = {8:{home:7,away:1,sign:"1"},9:{home:2,away:2,sign:"x"},10:{home:1,away:0,sign:"1"},11:{home:5,away:1,sign:"1"},12:{home:0,away:0,sign:"x"},13:{home:1,away:1,sign:"x"},14:{home:1,away:1,sign:"x"},15:{home:2,away:2,sign:"x"},16:{home:3,away:1,sign:"1"},17:{home:1,away:4,sign:"2"},18:{home:3,away:0,sign:"1"},19:{home:3,away:1,sign:"1"},20:{home:1,away:1,sign:"x"},21:{home:4,away:2,sign:"1"},22:{home:1,away:0,sign:"1"},23:{home:1,away:3,sign:"2"}};
+const HARDCODED_RESULTS = {27:{home:1,away:0,sign:"1"},8:{home:7,away:1,sign:"1"},9:{home:2,away:2,sign:"x"},10:{home:1,away:0,sign:"1"},11:{home:5,away:1,sign:"1"},12:{home:0,away:0,sign:"x"},13:{home:1,away:1,sign:"x"},14:{home:1,away:1,sign:"x"},15:{home:2,away:2,sign:"x"},16:{home:3,away:1,sign:"1"},17:{home:1,away:4,sign:"2"},18:{home:3,away:0,sign:"1"},19:{home:3,away:1,sign:"1"},20:{home:1,away:1,sign:"x"},21:{home:4,away:2,sign:"1"},22:{home:1,away:0,sign:"1"},23:{home:1,away:3,sign:"2"}};
 Object.assign(results, HARDCODED_RESULTS);
 
 function applyResults() {
@@ -530,7 +530,7 @@ async function generateFeedPosts() {
     const correctScore = DATA.participants.filter(p => m.predictions[p] && m.predictions[p].points >= 3);
     const correctSign = DATA.participants.filter(p => m.predictions[p] && m.predictions[p].points === 1);
     const sign = m.result_home > m.result_away ? '1' : m.result_home < m.result_away ? '2' : 'X';
-    return m.home + ' ' + m.result_home + '-' + m.result_away + ' ' + m.away + ' (tegn: ' + sign + ') | Korrekt score: ' + (correctScore.join(', ') || 'ingen') + ' | Korrekt tegn: ' + (correctSign.join(', ') || 'ingen');
+    return m.home + ' ' + m.result_home + '-' + m.result_away + ' ' + m.away + ' (tegn: ' + sign + ') | ' + correctScore.length + ' ud af 19 korrekt score: ' + (correctScore.join(', ') || 'ingen') + ' | ' + correctSign.length + ' ud af 19 kun korrekt tegn: ' + (correctSign.join(', ') || 'ingen');
   }).join('\n');
 
   const standingsStr = sorted.map(p => ranks[p] + '. ' + p + ': ' + totals[p] + ' point').join('\n');
@@ -1007,6 +1007,8 @@ async function saveResults() {
   });
   const rows = Object.entries(results).map(([idx, r]) => ({match_index: parseInt(idx), result_home: r.home, result_away: r.away, sign: String(r.sign)}));
   await dbUpsert('match_results', rows);
+  applyResults();
+  await loadFromDB();
   applyResults();
   generateFeedPosts();
   alert('✅ Resultater gemt og point beregnet!');
