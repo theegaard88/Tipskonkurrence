@@ -494,6 +494,8 @@ function feedPostHTML(title, body, createdAt) {
     + '</div>';
 }
 
+const GEMINI_KEY = 'AIzaSyAb8RN6IErGWvl8YF5Z2NmK-JzHlfvNNRp08K-riVKwzJzSU4vw';
+
 async function generateFeedPosts() {
   const totals = calcTotals();
   const ranks = calcRanks(totals);
@@ -505,47 +507,29 @@ async function generateFeedPosts() {
     const correctScore = DATA.participants.filter(p => m.predictions[p] && m.predictions[p].points >= 3);
     const correctSign = DATA.participants.filter(p => m.predictions[p] && m.predictions[p].points === 1);
     const sign = m.result_home > m.result_away ? '1' : m.result_home < m.result_away ? '2' : 'X';
-    return `${m.home} ${m.result_home}-${m.result_away} ${m.away} (tegn: ${sign}) | Korrekt score: ${correctScore.join(', ') || 'ingen'} | Korrekt tegn: ${correctSign.join(', ') || 'ingen'}`;
+    return m.home + ' ' + m.result_home + '-' + m.result_away + ' ' + m.away + ' (tegn: ' + sign + ') | Korrekt score: ' + (correctScore.join(', ') || 'ingen') + ' | Korrekt tegn: ' + (correctSign.join(', ') || 'ingen');
   }).join('\n');
 
-  const standingsStr = sorted.slice(0, 8).map(p => `${ranks[p]}. ${p}: ${totals[p]} point`).join('\n');
+  const standingsStr = sorted.slice(0, 8).map(p => ranks[p] + '. ' + p + ': ' + totals[p] + ' point').join('\n');
 
   const upcomingStr = upcomingMatches.map(m => {
     const sched = getSchedule(m.home, m.away);
     const homeVotes = DATA.participants.filter(p => m.predictions[p] && String(m.predictions[p].sign) === '1').length;
     const drawVotes = DATA.participants.filter(p => m.predictions[p] && String(m.predictions[p].sign).toLowerCase() === 'x').length;
     const awayVotes = DATA.participants.filter(p => m.predictions[p] && String(m.predictions[p].sign) === '2').length;
-    return `${m.home} vs ${m.away} (${sched ? sched.date + ' ' + sched.time : ''}) | Gæt: ${homeVotes} på hjemme, ${drawVotes} på uafgjort, ${awayVotes} på ude`;
+    return m.home + ' vs ' + m.away + ' (' + (sched ? sched.date + ' ' + sched.time : '') + ') | Gæt: ' + homeVotes + ' på hjemme, ' + drawVotes + ' på uafgjort, ' + awayVotes + ' på ude';
   }).join('\n');
 
-  const prompt = `Du er kommentator for en privat VM 2026 tipskonkurrence med 19 venner. Skriv 3-4 feed-opslag — kortfattede, personlige og underholdende med humor. Brug deltagarnes rigtige navne.
-
-AKTUEL STILLING (top 8):
-${standingsStr}
-
-SENESTE KAMPE:
-${matchSummaries}
-
-KOMMENDE KAMPE:
-${upcomingStr}
-
-Skriv 3-4 opslag. Hvert opslag skal være 2-4 sætninger og handle om ét emne (et resultat, en spiller der rykker, en sjov statistik, eller en forudsigelse om kommende kamp). Skriv på dansk med humor.
-
-Svar KUN med JSON array uden markdown:
-[{"title":"...","body":"..."},{"title":"...","body":"..."}]`;
+  const prompt = 'Du er kommentator for en privat VM 2026 tipskonkurrence med 19 venner. Skriv 3-4 feed-opslag — kortfattede, personlige og underholdende med humor. Brug deltagarnes rigtige navne.\n\nAKTUEL STILLING (top 8):\n' + standingsStr + '\n\nSENESTE KAMPE:\n' + matchSummaries + '\n\nKOMMENDE KAMPE:\n' + upcomingStr + '\n\nSkriv 3-4 opslag. Hvert opslag skal være 2-4 sætninger og handle om ét emne. Skriv på dansk med humor.\n\nSvar KUN med JSON array uden markdown:\n[{"title":"...","body":"..."},{"title":"...","body":"..."}]';
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_KEY, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 800,
-        messages: [{ role: 'user', content: prompt }]
-      })
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
     });
     const data = await response.json();
-    const text = data.content[0].text.trim().replace(/```json|```/g, '');
+    const text = data.candidates[0].content.parts[0].text.trim().replace(/```json|```/g, '');
     const posts = JSON.parse(text);
 
     for (const post of posts) {
