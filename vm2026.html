@@ -408,10 +408,14 @@ function getSchedule(home, away) {
 }
 
 async function loadFromDB() {
-  const [matchRows, specialRows] = await Promise.all([dbGet('match_results', 'select=*'), dbGet('special_results', 'select=*')]);
-  matchRows.forEach(r => { results[r.match_index] = { home: r.result_home, away: r.result_away, sign: r.sign }; });
-  specialRows.forEach(r => { specialResults[r.category] = r.value; });
-  applyResults();
+  try {
+    const [matchRows, specialRows] = await Promise.all([dbGet('match_results', 'select=*'), dbGet('special_results', 'select=*')]);
+    if (matchRows) matchRows.forEach(r => { results[r.match_index] = { home: r.result_home, away: r.result_away, sign: r.sign }; });
+    if (specialRows) specialRows.forEach(r => { specialResults[r.category] = r.value; });
+    applyResults();
+  } catch(e) {
+    console.error('loadFromDB failed:', e);
+  }
 }
 
 function getSign(h, a) {
