@@ -528,12 +528,21 @@ async function generateFeedPosts() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
     });
+    if (!response.ok) {
+      console.error('Gemini HTTP error:', response.status, await response.text());
+      return;
+    }
     const data = await response.json();
-    const text = data.candidates[0].content.parts[0].text.trim().replace(/```json|```/g, '');
+    if (!data.candidates || !data.candidates[0]) {
+      console.error('Gemini no candidates:', JSON.stringify(data));
+      return;
+    }
+    const text = data.candidates[0].content.parts[0].text.trim().replace(/```json|```/g, '').trim();
+    console.log('Gemini response:', text);
     const posts = JSON.parse(text);
 
     for (const post of posts) {
-      await fetch(SUPABASE_URL + '/rest/v1/feed_posts', {
+      const r = await fetch(SUPABASE_URL + '/rest/v1/feed_posts', {
         method: 'POST',
         headers: {
           'apikey': SUPABASE_KEY,
@@ -542,7 +551,9 @@ async function generateFeedPosts() {
         },
         body: JSON.stringify({title: post.title, body: post.body})
       });
+      console.log('Supabase insert:', r.status);
     }
+    console.log('Feed posts generated successfully!');
   } catch(e) {
     console.error('Feed generation failed:', e);
   }
