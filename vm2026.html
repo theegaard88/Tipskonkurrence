@@ -507,7 +507,26 @@ async function generateFeedPosts() {
   const playedMatches = DATA.matches.filter(m => m.result_home !== null);
   const upcomingMatches = DATA.matches.filter(m => m.result_home === null).slice(0, 5);
 
-  const matchSummaries = playedMatches.slice(-8).map(m => {
+  // Calculate accurate per-player stats
+  const playerStats = {};
+  DATA.participants.forEach(p => {
+    let correctScores = 0, correctSigns = 0;
+    playedMatches.forEach(m => {
+      const pred = m.predictions[p];
+      if (!pred) return;
+      if (pred.points >= 3) correctScores++;
+      if (pred.points >= 1) correctSigns++;
+    });
+    playerStats[p] = { correctScores, correctSigns, total: totals[p] };
+  });
+
+  // Build player stats string
+  const playerStatsStr = DATA.participants.map(p => {
+    const s = playerStats[p];
+    return p + ': ' + s.total + ' point, ' + s.correctScores + ' korrekte scorer, ' + s.correctSigns + ' korrekte tegn';
+  }).join('\n');
+
+  const matchSummaries = playedMatches.map(m => {
     const correctScore = DATA.participants.filter(p => m.predictions[p] && m.predictions[p].points >= 3);
     const correctSign = DATA.participants.filter(p => m.predictions[p] && m.predictions[p].points === 1);
     const sign = m.result_home > m.result_away ? '1' : m.result_home < m.result_away ? '2' : 'X';
