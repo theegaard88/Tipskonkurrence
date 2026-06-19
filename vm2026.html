@@ -21,8 +21,8 @@ nav{display:flex;gap:0.5rem;padding:1rem 2rem;background:#0d1525;border-bottom:1
 .section.active{display:block}
 
 /* Rangliste */
-.podium{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:2rem}
-.podium-card{background:#0d1b3e;border:1px solid #1e3a6e;border-radius:10px;padding:1.2rem;text-align:center}
+.podium{display:flex;flex-wrap:wrap;gap:1rem;margin-bottom:2rem;justify-content:center}
+.podium-card{background:#0d1b3e;border:1px solid #1e3a6e;border-radius:10px;padding:1.2rem;text-align:center;width:220px;flex:0 0 220px;box-sizing:border-box}
 .podium-card.p1{border-color:#f5c842;background:linear-gradient(180deg,#1a1400,#0d1b3e)}
 .podium-card.p2{border-color:#b0b8c8;background:linear-gradient(180deg,#0f1520,#0d1b3e)}
 .podium-card.p3{border-color:#b07a40;background:linear-gradient(180deg,#130e05,#0d1b3e)}
@@ -211,6 +211,7 @@ select{width:100%;text-align:center}
       <div class="prize-pct">10% af puljen</div>
     </div>
   </div>
+  <div id="prizes-dynamic" style="margin-bottom:1rem"></div>
   <div style="background:#0d1b3e;border:1px solid #1e3a6e;border-radius:10px;padding:1.5rem">
     <h3 style="font-size:1rem;font-weight:600;color:#b0c8e8;margin-bottom:1rem">Pointsystem</h3>
     <div style="display:grid;gap:0.6rem;font-size:0.9rem">
@@ -284,8 +285,11 @@ async function dbUpsert(table, rows) {
   });
 }
 
-let results = {};
+let results = {8:{home:7,away:1,sign:"1"},9:{home:2,away:2,sign:"x"},10:{home:1,away:0,sign:"1"},11:{home:5,away:1,sign:"1"},12:{home:0,away:0,sign:"x"},13:{home:1,away:1,sign:"x"},14:{home:1,away:1,sign:"x"},15:{home:2,away:2,sign:"x"},16:{home:3,away:1,sign:"1"},17:{home:1,away:4,sign:"2"},18:{home:3,away:0,sign:"1"},19:{home:3,away:1,sign:"1"},20:{home:1,away:1,sign:"x"},21:{home:4,away:2,sign:"1"},22:{home:1,away:0,sign:"1"},23:{home:1,away:3,sign:"2"}};
 let specialResults = {};
+// Hardcoded fallback results for preview
+const HARDCODED_RESULTS = {8:{home:7,away:1,sign:"1"},9:{home:2,away:2,sign:"x"},10:{home:1,away:0,sign:"1"},11:{home:5,away:1,sign:"1"},12:{home:0,away:0,sign:"x"},13:{home:1,away:1,sign:"x"},14:{home:1,away:1,sign:"x"},15:{home:2,away:2,sign:"x"},16:{home:3,away:1,sign:"1"},17:{home:1,away:4,sign:"2"},18:{home:3,away:0,sign:"1"},19:{home:3,away:1,sign:"1"},20:{home:1,away:1,sign:"x"},21:{home:4,away:2,sign:"1"},22:{home:1,away:0,sign:"1"},23:{home:1,away:3,sign:"2"}};
+Object.assign(results, HARDCODED_RESULTS);
 
 function applyResults() {
   DATA.matches.forEach((m,i) => {
@@ -550,15 +554,60 @@ function renderRangliste() {
   });
   const ranksOld = calcRanks(totalsOld);
 
+function calcPrizes(totals) {
+  const PRIZE_POOL = [1140, 570, 190];
+  const sorted = DATA.participants.slice().sort((a,b) => totals[b]-totals[a]);
+  const prizes = {};
+  DATA.participants.forEach(p => prizes[p] = 0);
+
+  let i = 0;
+  while (i < sorted.length) {
+    // Find alle spillere med samme point
+    const pts = totals[sorted[i]];
+    let j = i;
+    while (j < sorted.length && totals[sorted[j]] === pts) j++;
+    // Spillere i denne gruppe: sorted[i..j-1], de deler præmier på pladserne i+1..j
+    const groupSize = j - i;
+    const relevantPrizes = PRIZE_POOL.slice(i, j); // præmier der dækker disse pladser
+    if (relevantPrizes.length > 0) {
+      const shared = relevantPrizes.reduce((a,b) => a+b, 0) / groupSize;
+      for (let k = i; k < j; k++) prizes[sorted[k]] = shared;
+    }
+    i = j;
+  }
+  return prizes;
+}
+
   const medals = ['🥇','🥈','🥉'];
   const prizes = [1140, 570, 190];
+  const prizeMap = calcPrizes(totals);
+
+  // Build podium — show all prize winners (up to those sharing top 3 prizes)
+  const podiumPlayers = sorted.filter(p => prizeMap[p] > 0);
   const podiumEl = document.getElementById('podium');
-  podiumEl.innerHTML = sorted.slice(0,3).map((p,i) => `
-    <div class="podium-card p${i+1}">
-      <div class="podium-rank">${medals[i]}</div>
-      <div class="podium-name">${p}</div>
-      <div class="podium-pts">${totals[p]}</div>
-      <div class="prize-pct" style="color:#7a9cc4;font-size:0.85rem">${prizes[i].toLocaleString('da')} kr</div>
+
+  // Group by rank for podium display
+  const podiumGroups = [];
+  let seen = new Set();
+  [1,2,3].forEach(rank => {
+    const group = podiumPlayers.filter(p => {
+      const r = ranks[p];
+      return r === rank && !seen.has(p);
+    });
+    if (group.length > 0) {
+      group.forEach(p => seen.add(p));
+      podiumGroups.push({rank, players: group, pts: totals[group[0]], prize: prizeMap[group[0]]});
+    }
+  });
+
+  const medalIcons = {1:'🥇', 2:'🥈', 3:'🥉'};
+  const podiumClasses = {1:'p1', 2:'p2', 3:'p3'};
+  podiumEl.innerHTML = podiumGroups.map(g => `
+    <div class="podium-card ${podiumClasses[g.rank]}">
+      <div class="podium-rank">${medalIcons[g.rank]}</div>
+      <div class="podium-name">${g.players.join('<br>&<br>')}</div>
+      <div class="podium-pts">${g.pts}</div>
+      <div class="prize-pct" style="color:#7a9cc4;font-size:0.85rem">${Math.round(g.prize).toLocaleString('da')} kr${g.players.length>1?' hver':''}</div>
     </div>`).join('');
 
   const lbEl = document.getElementById('lb-rows');
@@ -837,23 +886,66 @@ async function saveSpecial() {
 }
 
 function renderPraemier() {
+  const totals = calcTotals();
+  const prizeMap = calcPrizes(totals);
+  const sorted = DATA.participants.slice().sort((a,b) => totals[b]-totals[a]);
+
+  // Aktuel præmiefordeling
+  const prizeEl = document.getElementById('prizes-dynamic');
+  const medalIcons = ['🥇','🥈','🥉'];
+  const borderColors = ['#f5c842','#b0b8c8','#b07a40'];
+  const uniquePts = [...new Set(sorted.map(p => totals[p]))].slice(0, 3);
+  while (uniquePts.length < 3) uniquePts.push(null);
+
+  let boxesHTML = '';
+  uniquePts.forEach((pts, i) => {
+    if (pts === null) {
+      boxesHTML += '<div style="background:#091428;border:1px solid ' + borderColors[i] + ';opacity:0.4;border-radius:8px;padding:1rem;text-align:center;width:180px;flex:0 0 180px">';
+      boxesHTML += '<div style="font-size:1.2rem">' + medalIcons[i] + '</div>';
+      boxesHTML += '<div style="font-size:0.8rem;color:#5a7aa4;margin:4px 0">' + (i+1) + '. præmie</div>';
+      boxesHTML += '<div style="font-size:0.85rem;color:#5a7aa4">–</div>';
+      boxesHTML += '<div style="font-size:1rem;font-weight:700;color:#5a7aa4">0 kr</div></div>';
+    } else {
+      const players = sorted.filter(p => totals[p] === pts);
+      const prize = prizeMap[players[0]];
+      const isDelt = players.length > 1;
+      boxesHTML += '<div style="background:#091428;border:1px solid ' + borderColors[i] + ';border-radius:8px;padding:1rem;text-align:center;width:180px;flex:0 0 180px">';
+      boxesHTML += '<div style="font-size:1.2rem">' + medalIcons[i] + '</div>';
+      boxesHTML += '<div style="font-size:0.8rem;color:#7a9cc4;margin:4px 0">' + (i+1) + '. præmie' + (isDelt ? ' (delt)' : '') + '</div>';
+      boxesHTML += '<div style="font-size:0.85rem;color:#e8eaf0;font-weight:600">' + players.join('<br>&<br>') + '</div>';
+      boxesHTML += '<div style="font-size:1rem;font-weight:700;color:#4a9eff;margin-top:4px">' + Math.round(prize).toLocaleString('da') + ' kr' + (isDelt ? ' hver' : '') + '</div></div>';
+    }
+  });
+
+  prizeEl.innerHTML = '<div style="background:#0d1b3e;border:1px solid #1e3a6e;border-radius:10px;padding:1.5rem;margin-bottom:1rem"><h3 style="font-size:1rem;font-weight:600;color:#b0c8e8;margin-bottom:1rem">Aktuel præmiefordeling</h3><div style="display:flex;flex-wrap:wrap;gap:1rem;justify-content:center">' + boxesHTML + '</div></div>';
+
+  // Placerings- og topscorertabel
   const el = document.getElementById('placements-table');
   const cats = ['Gold','Silver','Bronze','1st topscorer','2nd topscorer','3rd topscorer'];
-  const labels = ['🥇 Guld','🥈 Sølv','🥉 Bronze','⚽ Topscorer #1','⚽ Topscorer #2','⚽ Topscorer #3'];
-  el.innerHTML = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:0.8rem">
-    <thead><tr style="border-bottom:1px solid #1e3a6e">
-      <th style="text-align:left;padding:0.5rem 0.4rem;color:#5a7aa4;font-weight:600">Kategori</th>
-      ${DATA.participants.map(p=>`<th style="text-align:center;padding:0.5rem 0.3rem;color:#7a9cc4;font-size:0.7rem;white-space:nowrap">${p.split(' ')[0]}</th>`).join('')}
-    </tr></thead>
-    <tbody>${cats.map((cat,i)=>`<tr style="border-bottom:1px solid #0d1525">
-      <td style="padding:0.5rem 0.4rem;color:#9ab0cc;font-weight:500;white-space:nowrap">${labels[i]}</td>
-      ${DATA.participants.map(p=>`<td style="text-align:center;padding:0.5rem 0.3rem;color:#7a9cc4">${(DATA.placements[cat][p]||'').trim()}</td>`).join('')}
-    </tr>`).join('')}</tbody>
-  </table></div>`;
+  const labels = ['🥇 Guld', '🥈 Sølv', '🥉 Bronze', '⚽ Topscorer #1', '⚽ Topscorer #2', '⚽ Topscorer #3'];
+
+  let tableHTML = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:0.8rem"><thead><tr style="border-bottom:1px solid #1e3a6e">';
+  tableHTML += '<th style="text-align:left;padding:0.5rem 0.4rem;color:#5a7aa4;font-weight:600">Kategori</th>';
+  DATA.participants.forEach(p => {
+    tableHTML += '<th style="text-align:center;padding:0.5rem 0.3rem;color:#7a9cc4;font-size:0.7rem;white-space:nowrap">' + p.split(' ')[0] + '</th>';
+  });
+  tableHTML += '</tr></thead><tbody>';
+  cats.forEach((cat, i) => {
+    tableHTML += '<tr style="border-bottom:1px solid #0d1525">';
+    tableHTML += '<td style="padding:0.5rem 0.4rem;color:#9ab0cc;font-weight:500;white-space:nowrap">' + labels[i] + '</td>';
+    DATA.participants.forEach(p => {
+      const val = (DATA.placements[cat][p] || DATA.placements[cat][p.trim()] || '–').toString().trim();
+      tableHTML += '<td style="text-align:center;padding:0.5rem 0.3rem;color:#7a9cc4">' + val + '</td>';
+    });
+    tableHTML += '</tr>';
+  });
+  tableHTML += '</tbody></table></div>';
+  el.innerHTML = tableHTML;
 }
 
-// Init - load from Supabase then render
-loadFromDB().then(() => renderRangliste());
+// Init - apply hardcoded results immediately, then load from Supabase
+applyResults();
+loadFromDB().then(() => { renderRangliste(); }).catch(() => { renderRangliste(); });
 </script>
 </div><!-- end page-wrapper -->
 </body>
