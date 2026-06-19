@@ -1062,9 +1062,10 @@ function renderPraemier() {
   el.innerHTML = tableHTML;
 }
 
-// Init - apply hardcoded results immediately, then load from Supabase
+// Init - render immediately with hardcoded data, then update from Supabase
 applyResults();
-loadFromDB().then(() => { renderRangliste(); }).catch(() => { renderRangliste(); });
+renderRangliste();
+loadFromDB().then(() => { applyResults(); renderRangliste(); }).catch(e => { console.error('DB load failed:', e); });
 </script>
 </div><!-- end page-wrapper -->
 </body>
