@@ -913,11 +913,11 @@ function renderPraemier() {
       boxesHTML += '<div style="font-size:1.2rem">' + medalIcons[i] + '</div>';
       boxesHTML += '<div style="font-size:0.8rem;color:#7a9cc4;margin:4px 0">' + (i+1) + '. præmie' + (isDelt ? ' (delt)' : '') + '</div>';
       boxesHTML += '<div style="font-size:0.85rem;color:#e8eaf0;font-weight:600">' + players.join('<br>&<br>') + '</div>';
-      boxesHTML += '<div style="font-size:1rem;font-weight:700;color:#4a9eff;margin-top:4px">' + Math.round(prize).toLocaleString('da') + ' kr' + (isDelt ? ' hver' : '') + '</div></div>';
+      boxesHTML += '<div style="font-size:1rem;font-weight:700;color:#4a9eff;margin-top:4px">' + Math.round(prize) + ' kr' + (isDelt ? ' hver' : '') + '</div></div>';
     }
   });
 
-  prizeEl.innerHTML = '<div style="background:#0d1b3e;border:1px solid #1e3a6e;border-radius:10px;padding:1.5rem;margin-bottom:1rem"><h3 style="font-size:1rem;font-weight:600;color:#b0c8e8;margin-bottom:1rem">Aktuel præmiefordeling</h3><div style="display:flex;flex-wrap:wrap;gap:1rem;justify-content:center">' + boxesHTML + '</div></div>';
+  if (prizeEl) prizeEl.innerHTML = '<div style="background:#0d1b3e;border:1px solid #1e3a6e;border-radius:10px;padding:1.5rem;margin-bottom:1rem"><h3 style="font-size:1rem;font-weight:600;color:#b0c8e8;margin-bottom:1rem">Aktuel præmiefordeling</h3><div style="display:flex;flex-wrap:wrap;gap:1rem;justify-content:center">' + boxesHTML + '</div></div>';
 
   // Placerings- og topscorertabel
   const el = document.getElementById('placements-table');
