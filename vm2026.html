@@ -276,8 +276,11 @@ const DATA = {"participants":["Thomas Heegaard","Frederik Franck","Martin Thomse
 const SUPABASE_URL = 'https://jkcjeukrfvvhoxwffupb.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprY2pldWtyZnZ2aG94d2ZmdXBiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MjI5NjMsImV4cCI6MjA5NzA5ODk2M30.XeZlsAGfasdjuc3vNpobkNN7KSH-o4eJcsVIhZg60Pk';
 
-async function dbGet(table) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=*`, {
+async function dbGet(table, params) {
+  const url = params 
+    ? `${SUPABASE_URL}/rest/v1/${table}?${params}`
+    : `${SUPABASE_URL}/rest/v1/${table}?select=*`;
+  const res = await fetch(url, {
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
   });
   return res.ok ? res.json() : [];
@@ -405,7 +408,7 @@ function getSchedule(home, away) {
 }
 
 async function loadFromDB() {
-  const [matchRows, specialRows] = await Promise.all([dbGet('match_results'), dbGet('special_results')]);
+  const [matchRows, specialRows] = await Promise.all([dbGet('match_results', 'select=*'), dbGet('special_results', 'select=*')]);
   matchRows.forEach(r => { results[r.match_index] = { home: r.result_home, away: r.result_away, sign: r.sign }; });
   specialRows.forEach(r => { specialResults[r.category] = r.value; });
   applyResults();
@@ -466,7 +469,7 @@ async function renderFeed() {
   const el = document.getElementById('feed-container');
   el.innerHTML = '<div style="text-align:center;padding:2rem;color:#5a7aa4"><div style="font-size:2rem;margin-bottom:0.5rem">⏳</div><div>Indlæser feed...</div></div>';
 
-  const existing = await dbGet('feed_posts?order=created_at.desc');
+  const existing = await dbGet('feed_posts', 'select=*&order=created_at.desc');
 
   if (existing && existing.length > 0) {
     let html = '<div style="display:grid;gap:1rem">';
