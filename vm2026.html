@@ -505,7 +505,7 @@ async function generateFeedPosts() {
   const ranks = calcRanks(totals);
   const sorted = DATA.participants.slice().sort((a,b) => totals[b]-totals[a]);
   const playedMatches = DATA.matches.filter(m => m.result_home !== null);
-  const upcomingMatches = DATA.matches.filter(m => m.result_home === null).slice(0, 5);
+  const upcomingMatches = DATA.matches.filter(m => m.result_home === null).slice(0, 3);
 
   // Calculate accurate per-player stats
   const playerStats = {};
@@ -526,7 +526,7 @@ async function generateFeedPosts() {
     return p + ': ' + s.total + ' point, ' + s.correctScores + ' korrekte scorer, ' + s.correctSigns + ' korrekte tegn';
   }).join('\n');
 
-  const matchSummaries = playedMatches.map(m => {
+  const matchSummaries = playedMatches.slice(-3).map(m => {
     const correctScore = DATA.participants.filter(p => m.predictions[p] && m.predictions[p].points >= 3);
     const correctSign = DATA.participants.filter(p => m.predictions[p] && m.predictions[p].points === 1);
     const sign = m.result_home > m.result_away ? '1' : m.result_home < m.result_away ? '2' : 'X';
