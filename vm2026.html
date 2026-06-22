@@ -905,7 +905,7 @@ function renderKampe() {
               const bg = pts===null?'#091428':pts>=4?'#0d2a0d':pts>=3?'#0d2218':pts>=1?'#1a1a00':'#1a0a0a';
               const col = pts===null?'#7a9cc4':pts>=4?'#22c55e':pts>=3?'#86efac':pts>=1?'#fbbf24':'#ef4444';
               return `<div style="background:${bg};border-radius:5px;padding:0.35rem 0.5rem;font-size:0.75rem">
-                <div style="color:#9ab0cc;font-size:0.7rem;margin-bottom:1px">${p.split(' ')[0]}</div>
+                <div style="color:#9ab0cc;font-size:0.7rem;margin-bottom:1px">${p.split(' ')[0]} ${p.split(' ')[1] ? p.split(' ')[1][0] + '.' : ''}</div>
                 <div style="font-weight:600;color:${col}">${scoreStr} <span style="color:#5a7aa4">${signStr}</span>${pts!==null?` <span style="color:${col}">(${pts}p)</span>`:''}</div>
               </div>`;
             }).join('')}
