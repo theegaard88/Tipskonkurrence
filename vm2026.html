@@ -586,7 +586,7 @@ function renderStatistik() {
         <span>${title}</span><span id="${id}-icon" style="color:#5a7aa4;font-size:1rem">▶</span>
       </div>
       <div id="${id}" style="display:none">
-        ${rows.map((r, i) => `<div style="display:grid;grid-template-columns:30px 1fr auto;align-items:center;padding:0.6rem 1.2rem;border-bottom:1px solid #111e38;font-size:0.85rem">
+        ${rows.map((r, i) => `<div ondblclick="gotoPlayer('${r.name.replace(/'/g, "\\'")}')" style="display:grid;grid-template-columns:30px 1fr auto;align-items:center;padding:0.6rem 1.2rem;border-bottom:1px solid #111e38;font-size:0.85rem;cursor:pointer" title="Dobbeltklik for at se ${r.name}s resultater">
           <span style="color:#5a7aa4;font-weight:600">${i+1}</span>
           <span style="color:#e8eaf0">${r.name}</span>
           <span style="color:#4a9eff;font-weight:600;text-align:right">${r.value}</span>
@@ -606,7 +606,7 @@ function renderStatistik() {
       <div style="display:grid;grid-template-columns:30px 1fr auto auto;align-items:center;padding:0.5rem 1.2rem;background:#060e1f;font-size:0.72rem;font-weight:600;color:#5a7aa4;text-transform:uppercase;letter-spacing:0.3px">
         <span>#</span><span>Spiller</span><span style="text-align:center;min-width:50px">Score</span><span style="text-align:center;min-width:50px">Tegn</span>
       </div>
-      ${sortedByScore.map((p, i) => `<div style="display:grid;grid-template-columns:30px 1fr auto auto;align-items:center;padding:0.6rem 1.2rem;border-bottom:1px solid #111e38;font-size:0.85rem">
+      ${sortedByScore.map((p, i) => `<div ondblclick="gotoPlayer('${p.replace(/'/g, "\\'")}')" style="display:grid;grid-template-columns:30px 1fr auto auto;align-items:center;padding:0.6rem 1.2rem;border-bottom:1px solid #111e38;font-size:0.85rem;cursor:pointer" title="Dobbeltklik for at se ${p}s resultater">
         <span style="color:#5a7aa4;font-weight:600">${i+1}</span>
         <span style="color:#e8eaf0">${p}</span>
         <span style="color:#22c55e;font-weight:600;text-align:center;min-width:50px">${stats[p].correctScore}</span>
