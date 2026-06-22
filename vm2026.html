@@ -524,7 +524,9 @@ function renderStatistik() {
       if (!pred) return;
       stats[p].played++;
       if (pred.points >= 3) stats[p].correctScore++;
-      if (pred.points >= 1) stats[p].correctSign++;
+      const actualSign = String(m.sign).toLowerCase().trim();
+      const predSign = String(pred.sign).toLowerCase().trim();
+      if (predSign === actualSign) stats[p].correctSign++;
     });
   });
 
