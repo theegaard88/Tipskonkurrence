@@ -537,10 +537,13 @@ async function generateFeedPosts() {
 
   const upcomingStr = upcomingMatches.map(m => {
     const sched = getSchedule(m.home, m.away);
-    const homeVotes = DATA.participants.filter(p => m.predictions[p] && String(m.predictions[p].sign) === '1').length;
-    const drawVotes = DATA.participants.filter(p => m.predictions[p] && String(m.predictions[p].sign).toLowerCase() === 'x').length;
-    const awayVotes = DATA.participants.filter(p => m.predictions[p] && String(m.predictions[p].sign) === '2').length;
-    return m.home + ' vs ' + m.away + ' (' + (sched ? sched.date + ' ' + sched.time : '') + ') | Gæt: ' + homeVotes + ' på hjemme, ' + drawVotes + ' på uafgjort, ' + awayVotes + ' på ude';
+    const homeVoters = DATA.participants.filter(p => m.predictions[p] && String(m.predictions[p].sign) === '1');
+    const drawVoters = DATA.participants.filter(p => m.predictions[p] && String(m.predictions[p].sign).toLowerCase() === 'x');
+    const awayVoters = DATA.participants.filter(p => m.predictions[p] && String(m.predictions[p].sign) === '2');
+    return m.home + ' vs ' + m.away + ' (' + (sched ? sched.date + ' ' + sched.time : '') + ')' +
+      ' | Hjemme (' + homeVoters.length + '): ' + (homeVoters.join(', ') || 'ingen') +
+      ' | Uafgjort (' + drawVoters.length + '): ' + (drawVoters.join(', ') || 'ingen') +
+      ' | Ude (' + awayVoters.length + '): ' + (awayVoters.join(', ') || 'ingen');
   }).join('\n');
 
   const prompt = 'Du er kommentator for en privat VM 2026 tipskonkurrence med 19 venner. Skriv 3-4 feed-opslag — kortfattede, personlige og underholdende med humor. Brug deltagarnes rigtige navne.\n\nAKTUEL STILLING:\n' + standingsStr + '\n\nSENESTE KAMPE:\n' + matchSummaries + '\n\nKOMMENDE KAMPE:\n' + upcomingStr + '\n\nVIGTIGE REGLER:\n- Brug aldrig han/hun — brug altid personens fulde navn\n- Alle 19 deltagere har gættet på ALLE kampe. Skriv ALDRIG at mange/få har gættet generelt — fokuser KUN på hvem der gættede RIGTIGT\n- Skriv ALTID det præcise antal der gættede rigtigt (fx 4 ud af 19)\n- Vær præcis om stillingen. Samme point = delt plads\n- Hvert opslag handler om ét konkret emne\n- Skriv på dansk med humor\n\nSvar KUN med JSON array uden markdown:\n[{"title":"...","body":"..."},{"title":"...","body":"..."}]';
@@ -1083,7 +1086,38 @@ function renderPraemier() {
   el.innerHTML = tableHTML;
 }
 
-// Init - render immediately with hardcoded data, then update from Supabase
+// Swipe back navigation for mobile
+let tabHistory = ['rangliste'];
+let currentTab = 'rangliste';
+let touchStartX = 0;
+let touchStartY = 0;
+
+document.addEventListener('touchstart', e => {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+}, {passive: true});
+
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  const dy = e.changedTouches[0].clientY - touchStartY;
+  if (touchStartX > 30) return;
+  if (Math.abs(dx) < 60) return;
+  if (Math.abs(dy) > Math.abs(dx)) return;
+  if (dx > 0 && tabHistory.length > 1) {
+    tabHistory.pop(); // remove current
+    const prevTab = tabHistory[tabHistory.length - 1];
+    const btn = document.querySelectorAll('.tab')[['rangliste','feed','mine','kampe','praemier','admin'].indexOf(prevTab)];
+    currentTab = prevTab;
+    origShowTab(prevTab, btn);
+  }
+}, {passive: true});
+
+const origShowTab = showTab;
+showTab = function(id, el) {
+  if (id !== currentTab) tabHistory.push(id);
+  currentTab = id;
+  origShowTab(id, el);
+};
 applyResults();
 renderRangliste();
 loadFromDB().then(() => { applyResults(); renderRangliste(); }).catch(e => { console.error('DB load failed:', e); });
