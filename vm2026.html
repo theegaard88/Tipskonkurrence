@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>VM 2026 Tipskonkurrence</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -127,6 +130,8 @@ select{width:100%;text-align:center}
 .status-bar-desktop{display:none !important}
 .status-bar-mobile{display:grid !important}
 }
+.streak-br{display:none}
+@media(max-width:600px){.streak-br{display:inline}}
 </style>
 </head>
 <body>
@@ -145,6 +150,7 @@ select{width:100%;text-align:center}
   <button class="tab" onclick="showTab('feed', this)">📰 Feed</button>
   <button class="tab" onclick="showTab('mine', this)">👤 Mine resultater</button>
   <button class="tab" onclick="showTab('kampe', this)">⚽ Kampe</button>
+  <button class="tab" onclick="showTab('statistik', this)">📊 Statistik</button>
   <button class="tab" onclick="showTab('praemier', this)">💰 Præmier</button>
   <button class="tab" onclick="showTab('admin', this)">🔧 Admin</button>
 </nav>
@@ -198,6 +204,11 @@ select{width:100%;text-align:center}
       <div>Indlæser feed...</div>
     </div>
   </div>
+</div>
+
+<!-- STATISTIK -->
+<div id="tab-statistik" class="section">
+  <div id="statistik-content"></div>
 </div>
 
 <!-- PRÆMIER -->
@@ -485,6 +496,154 @@ async function renderFeed() {
   }
 }
 
+function toggleStatBox(id) {
+  const content = document.getElementById(id);
+  const icon = document.getElementById(id + '-icon');
+  if (!content) return;
+  const isHidden = content.style.display === 'none';
+  content.style.display = isHidden ? 'block' : 'none';
+  if (icon) icon.textContent = isHidden ? '▼' : '▶';
+}
+
+function renderStatistik() {
+  const el = document.getElementById('statistik-content');
+  const playedMatches = DATA.matches.filter(m => m.result_home !== null);
+  if (playedMatches.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:2rem;color:#5a7aa4">Ingen kampe er afviklet endnu.</div>';
+    return;
+  }
+
+  // 1. Korrekte tegn og resultater per spiller
+  const stats = {};
+  DATA.participants.forEach(p => {
+    stats[p] = { correctScore: 0, correctSign: 0, played: 0 };
+  });
+  playedMatches.forEach(m => {
+    DATA.participants.forEach(p => {
+      const pred = m.predictions[p];
+      if (!pred) return;
+      stats[p].played++;
+      if (pred.points >= 3) stats[p].correctScore++;
+      if (pred.points >= 1) stats[p].correctSign++;
+    });
+  });
+
+  const sortedByScore = DATA.participants.slice().sort((a,b) => stats[b].correctScore - stats[a].correctScore || stats[b].correctSign - stats[a].correctSign);
+  const sortedBySign = DATA.participants.slice().sort((a,b) => stats[b].correctSign - stats[a].correctSign || stats[b].correctScore - stats[a].correctScore);
+
+  // 2 & 3. Streak calculations
+  function calcStreaks(p) {
+    const goodStreaks = []; // streaks with points
+    const badStreaks = [];  // streaks with 0 points
+    let curGood = 0, curGoodPts = 0;
+    let curBad = 0;
+
+    playedMatches.forEach(m => {
+      const pred = m.predictions[p];
+      const pts = pred ? (pred.points || 0) : 0;
+      if (pts > 0) {
+        curGood++;
+        curGoodPts += pts;
+        if (curBad > 0) { badStreaks.push(curBad); curBad = 0; }
+      } else {
+        curBad++;
+        if (curGood > 0) { goodStreaks.push({len: curGood, pts: curGoodPts}); curGood = 0; curGoodPts = 0; }
+      }
+    });
+    // Handle ongoing streaks
+    const ongoingGood = curGood > 0 ? {len: curGood, pts: curGoodPts, ongoing: true} : null;
+    const ongoingBad = curBad > 0 ? {len: curBad, ongoing: true} : null;
+    if (curGood > 0) goodStreaks.push({len: curGood, pts: curGoodPts, ongoing: true});
+    if (curBad > 0) badStreaks.push(curBad);
+
+    const bestStreak = goodStreaks.length > 0 ? goodStreaks.reduce((a,b) => b.len > a.len || (b.len===a.len && b.pts>a.pts) ? b : a) : null;
+    const worstStreak = badStreaks.length > 0 ? Math.max(...badStreaks) : 0;
+
+    return { bestStreak, worstStreak, ongoingGood, ongoingBad };
+  }
+
+  const streakData = {};
+  DATA.participants.forEach(p => { streakData[p] = calcStreaks(p); });
+
+  // Sort by best streak length then points
+  const sortedByBest = DATA.participants.slice().filter(p => streakData[p].bestStreak).sort((a,b) => {
+    const sa = streakData[a].bestStreak, sb = streakData[b].bestStreak;
+    return sb.len - sa.len || sb.pts - sa.pts;
+  });
+  const sortedByWorst = DATA.participants.slice().filter(p => streakData[p].worstStreak > 0).sort((a,b) => streakData[b].worstStreak - streakData[a].worstStreak);
+  const sortedByOngoingGood = DATA.participants.slice().filter(p => streakData[p].ongoingGood).sort((a,b) => {
+    const sa = streakData[a].ongoingGood, sb = streakData[b].ongoingGood;
+    return sb.len - sa.len || sb.pts - sa.pts;
+  });
+  const sortedByOngoingBad = DATA.participants.slice().filter(p => streakData[p].ongoingBad).sort((a,b) => streakData[b].ongoingBad.len - streakData[a].ongoingBad.len);
+
+  function statBox(title, rows) {
+    const id = 'stat-' + Math.random().toString(36).slice(2);
+    return `<div style="background:#0d1b3e;border:1px solid #1e3a6e;border-radius:10px;overflow:hidden;margin-bottom:1rem">
+      <div onclick="toggleStatBox('${id}')" style="background:#091428;padding:0.75rem 1.2rem;font-size:0.85rem;font-weight:700;color:#b0c8e8;cursor:pointer;display:flex;justify-content:space-between;align-items:center">
+        <span>${title}</span><span id="${id}-icon" style="color:#5a7aa4;font-size:1rem">▶</span>
+      </div>
+      <div id="${id}" style="display:none">
+        ${rows.map((r, i) => `<div style="display:grid;grid-template-columns:30px 1fr auto;align-items:center;padding:0.6rem 1.2rem;border-bottom:1px solid #111e38;font-size:0.85rem">
+          <span style="color:#5a7aa4;font-weight:600">${i+1}</span>
+          <span style="color:#e8eaf0">${r.name}</span>
+          <span style="color:#4a9eff;font-weight:600;text-align:right">${r.value}</span>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  let html = '';
+
+  // Box 1: Korrekte resultater og tegn kombineret
+  html += `<div style="background:#0d1b3e;border:1px solid #1e3a6e;border-radius:10px;overflow:hidden;margin-bottom:1rem">
+    <div onclick="toggleStatBox('stat-scoretegn')" style="background:#091428;padding:0.75rem 1.2rem;font-size:0.85rem;font-weight:700;color:#b0c8e8;cursor:pointer;display:flex;justify-content:space-between;align-items:center">
+      <span>⚽ Korrekte resultater & tegn</span><span id="stat-scoretegn-icon" style="color:#5a7aa4;font-size:1rem">▶</span>
+    </div>
+    <div id="stat-scoretegn" style="display:none">
+      <div style="display:grid;grid-template-columns:30px 1fr auto auto;align-items:center;padding:0.5rem 1.2rem;background:#060e1f;font-size:0.72rem;font-weight:600;color:#5a7aa4;text-transform:uppercase;letter-spacing:0.3px">
+        <span>#</span><span>Spiller</span><span style="text-align:center;min-width:50px">Score</span><span style="text-align:center;min-width:50px">Tegn</span>
+      </div>
+      ${sortedByScore.map((p, i) => `<div style="display:grid;grid-template-columns:30px 1fr auto auto;align-items:center;padding:0.6rem 1.2rem;border-bottom:1px solid #111e38;font-size:0.85rem">
+        <span style="color:#5a7aa4;font-weight:600">${i+1}</span>
+        <span style="color:#e8eaf0">${p}</span>
+        <span style="color:#22c55e;font-weight:600;text-align:center;min-width:50px">${stats[p].correctScore}</span>
+        <span style="color:#4a9eff;font-weight:600;text-align:center;min-width:50px">${stats[p].correctSign}</span>
+      </div>`).join('')}
+    </div>
+  </div>`;
+
+  // Box 2: Igangværende god streak
+  if (sortedByOngoingGood.length > 0) {
+    html += statBox('🔥 Bedste igangværende streak<span class="streak-br"><br></span><span style="font-weight:400;font-size:0.78rem;color:#7a9cc4"> (pt. flest kampe med point i træk)</span>', sortedByOngoingGood.map(p => {
+      const s = streakData[p].ongoingGood;
+      return { name: p, value: s.len + ' kampe · ' + s.pts + ' point' };
+    }));
+  }
+
+  // Box 3: Igangværende dårlig streak
+  if (sortedByOngoingBad.length > 0) {
+    html += statBox('❄️ Dårligste igangværende streak<span class="streak-br"><br></span><span style="font-weight:400;font-size:0.78rem;color:#7a9cc4"> (pt. flest pointløse kampe i træk)</span>', sortedByOngoingBad.map(p => {
+      const s = streakData[p].ongoingBad;
+      return { name: p, value: s.len + ' kampe uden point' };
+    }));
+  }
+
+  // Box 4: Bedste streak siden kamp 1
+  html += statBox('🔥 Bedste streak siden kamp 1<span class="streak-br"><br></span><span style="font-weight:400;font-size:0.78rem;color:#7a9cc4"> (flest kampe med point i træk)</span>', sortedByBest.map(p => {
+    const s = streakData[p].bestStreak;
+    return { name: p, value: s.len + ' kampe · ' + s.pts + ' point' + (s.ongoing ? ' 🔄' : '') };
+  }));
+
+  // Box 5: Dårligste streak siden kamp 1
+  html += statBox('❄️ Dårligste streak siden kamp 1<span class="streak-br"><br></span><span style="font-weight:400;font-size:0.78rem;color:#7a9cc4"> (flest pointløse kampe i træk)</span>', sortedByWorst.map(p => ({
+    name: p,
+    value: streakData[p].worstStreak + ' kampe uden point'
+  })));
+
+  el.innerHTML = html;
+}
+
 function feedPostHTML(title, body, createdAt) {
   const date = new Date(createdAt);
   const timeStr = date.toLocaleDateString('da-DK', {day:'numeric', month:'long'}) + ' · ' + date.toLocaleTimeString('da-DK', {hour:'2-digit', minute:'2-digit'});
@@ -611,6 +770,7 @@ function showTab(id, el) {
   if (id==='mine') renderMine();
   if (id==='kampe') renderKampe();
   if (id==='feed') renderFeed();
+  if (id==='statistik') renderStatistik();
   if (id==='admin' && adminUnlocked) renderAdmin();
   if (id==='praemier') renderPraemier();
 }
@@ -1130,7 +1290,7 @@ document.addEventListener('touchend', e => {
   if (dx > 0 && tabHistory.length > 1) {
     tabHistory.pop(); // remove current
     const prevTab = tabHistory[tabHistory.length - 1];
-    const btn = document.querySelectorAll('.tab')[['rangliste','feed','mine','kampe','praemier','admin'].indexOf(prevTab)];
+    const btn = document.querySelectorAll('.tab')[['rangliste','feed','mine','kampe','statistik','praemier','admin'].indexOf(prevTab)];
     currentTab = prevTab;
     origShowTab(prevTab, btn);
   }
