@@ -959,14 +959,15 @@ function togglePreds(id) {
 function renderAdmin() {
   const el = document.getElementById('admin-matches');
   el.innerHTML = `<div class="admin-row" style="background:transparent;font-size:0.75rem;color:#5a7aa4;font-weight:600;text-transform:uppercase">
-    <span>Kamp</span><span style="text-align:center">Hjemme</span><span style="text-align:center">Ude</span>
+    <span>Kamp</span><span style="text-align:center">Hjemme</span><span style="text-align:center">Ude</span><span></span>
   </div>` + DATA.matches.map((m,i) => {
     const h = m.result_home !== null ? m.result_home : '';
     const a = m.result_away !== null ? m.result_away : '';
-    return `<div class="admin-row">
+    return `<div class="admin-row" style="grid-template-columns:1fr 80px 80px auto">
       <span class="admin-teams">${m.home} – ${m.away}<br><span style="color:#5a7aa4;font-size:0.75rem">R${i%24+1} · Gr.${m.group}</span></span>
       <input class="admin-inp" id="r-${i}-h" type="number" min="0" max="20" value="${h}" placeholder="–">
       <input class="admin-inp" id="r-${i}-a" type="number" min="0" max="20" value="${a}" placeholder="–">
+      <button onclick="saveOneResult(${i})" style="background:#1a3a6e;color:#fff;border:none;padding:0.35rem 0.7rem;border-radius:5px;font-size:0.8rem;cursor:pointer;white-space:nowrap">Gem</button>
     </div>`;
   }).join('');
 
@@ -978,6 +979,29 @@ function renderAdmin() {
       <span class="admin-spec-lbl">${labels[i]}</span>
       <input class="admin-inp" id="spec-${i}" type="text" value="${specialResults[cat]||''}" placeholder="fx Spanien / Mbappe">
     </div>`).join('');
+}
+
+async function saveOneResult(i) {
+  const hEl = document.getElementById('r-'+i+'-h');
+  const aEl = document.getElementById('r-'+i+'-a');
+  if (!hEl || !aEl || hEl.value==='' || aEl.value==='') { alert('Indtast begge scores først'); return; }
+  const hn = parseInt(hEl.value), an = parseInt(aEl.value);
+  if (isNaN(hn)||isNaN(an)) { alert('Ugyldig score'); return; }
+  const m = DATA.matches[i];
+  m.result_home = hn; m.result_away = an; m.sign = getSign(hn,an);
+  results[i] = {home:hn, away:an, sign:m.sign};
+  DATA.participants.forEach(p => {
+    const pred = m.predictions[p]; if (!pred) return;
+    const exact = pred.home===hn && pred.away===an;
+    const signOk = String(pred.sign).toLowerCase().trim()===m.sign;
+    pred.points = (exact?3:0)+(signOk?1:0);
+  });
+  await dbUpsert('match_results', [{match_index:i, result_home:hn, result_away:an, sign:String(m.sign)}]);
+  applyResults();
+  await loadFromDB();
+  applyResults();
+  generateFeedPosts();
+  alert('✅ '+m.home+' '+hn+'-'+an+' '+m.away+' gemt!');
 }
 
 async function saveResults() {
